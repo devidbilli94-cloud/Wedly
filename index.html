@@ -4037,7 +4037,7 @@ const CLOUD_KEY = 'wp_cloud_config';
 const CLOUD_DEFAULTS = {
   apiBase:    'https://wedly.devidbilli94.workers.dev',
   adminToken: 'ZMguIipWiN4bJ0W1hZT68iZYxleC6Dm-EFkl1oYKa0s',
-  portalBase: 'https://wedly-newlyweds.pages.dev',  // cambia se la Page sposi ha un altro nome
+  portalBase: 'https://wedly-viewer.pages.dev',  // cambia se la Page sposi ha un altro nome
 };
 function hasCloudDefaults() {
   return !!(CLOUD_DEFAULTS.apiBase && CLOUD_DEFAULTS.adminToken && CLOUD_DEFAULTS.portalBase);
@@ -5612,7 +5612,7 @@ function saveCouple() {
 // ============================================
 function coupleLink() {
   if (!cloudCfg || !cloudCfg.portalBase || !state) return '';
-  return `${cloudCfg.portalBase}/?w=${state.id}`;
+  return `${cloudCfg.portalBase}/viewer.html?w=${state.id}`;
 }
 
 function showCoupleLink() {
