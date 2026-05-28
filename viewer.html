@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wedly — Spazio Sposi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Manrope:wght@400;500;600;700&family=Pinyon+Script&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f0e7; --bg-card:#fbf7f0; --bg-elevated:#ffffff;
+  --ink:#2a221c; --ink-soft:#6b5d4f; --ink-muted:#a89a89;
+  --line:#e6dccb; --line-soft:#efe6d6;
+  --terracotta:#b85c3c; --rose:#c8927e; --gold:#b89c5a;
+  --olive:#0d8246; --burgundy:#7a2e3b;
+  --radius:16px; --radius-sm:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Manrope',sans-serif; background:var(--bg); color:var(--ink);
+  min-height:100vh; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+
+/* Brand */
+.brand{text-align:center;margin-bottom:8px}
+.brand .logo{font-family:'Pinyon Script',cursive;font-size:54px;color:var(--terracotta);line-height:1;-webkit-text-stroke:0.6px var(--terracotta)}
+.brand .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:var(--ink-soft);margin-top:6px}
+
+/* PIN screen */
+.gate{max-width:420px;margin:40px auto 0;background:var(--bg-elevated);border:1px solid var(--line);border-radius:var(--radius);padding:32px;box-shadow:0 10px 40px rgba(42,34,28,.08)}
+.gate h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:30px;color:var(--terracotta);text-align:center;margin-bottom:6px}
+.gate p{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:24px}
+.field{margin-bottom:16px}
+.field label{display:block;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--terracotta);margin-bottom:6px;text-transform:capitalize}
+.field input,.field select{width:100%;padding:11px 13px;border:1.5px solid rgba(184,92,60,.40);border-radius:var(--radius-sm);background:var(--bg-elevated);font-size:15px;color:var(--ink);font-family:inherit;transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--terracotta);box-shadow:0 0 0 3px rgba(184,92,60,.15)}
+.pin-input{text-align:center;letter-spacing:.5em;font-size:24px!important;font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:999px;border:none;cursor:pointer;font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;transition:all .15s}
+.btn-primary{background:var(--terracotta);color:#fff}
+.btn-primary:hover{background:#a04e30}
+.btn-block{width:100%}
+.err{color:var(--burgundy);font-size:13px;text-align:center;margin-top:10px;min-height:18px}
+
+/* Header (after auth) */
+.couple-head{text-align:center;margin:24px 0 28px}
+.couple-head .names{font-family:'Pinyon Script',cursive;font-size:46px;color:var(--terracotta);line-height:1.05}
+.couple-head .names .amp{color:var(--gold)}
+.couple-head .meta{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--ink-soft);margin-top:4px}
+
+/* Total banner */
+.total-banner{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,rgba(184,156,90,.16),rgba(184,156,90,.04));border:1px solid rgba(184,156,90,.40);border-radius:var(--radius);padding:16px 20px;margin-bottom:22px}
+.total-banner .icon{font-size:30px}
+.total-banner .headline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:22px;color:var(--ink)}
+.total-banner .headline strong{font-family:'Manrope',sans-serif;font-style:normal;font-weight:700;color:#a07f3a;margin-left:4px}
+
+/* Quote table */
+.qt-wrap{background:var(--bg-card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+thead th{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--ink-soft);text-align:center;padding:12px;border-bottom:1px solid var(--line);background:var(--bg-card)}
+tbody td{padding:14px 12px;border-bottom:1px solid var(--line-soft);text-align:center;background:var(--bg-elevated);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+.cat-name{font-weight:700;font-size:15px}
+.cat-sub{font-size:12px;color:var(--ink-soft);font-style:italic;margin-top:2px}
+.amt{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.count-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(184,92,60,.08);border:1px solid rgba(184,92,60,.30);border-radius:999px;padding:5px 14px;cursor:pointer;font-weight:700;color:var(--terracotta);font-family:inherit}
+.count-btn:hover{background:var(--terracotta);color:#fff}
+.comments-count{font-size:13px;color:var(--ink-soft);font-weight:600;margin-left:8px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(42,34,28,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
+.overlay.active{display:flex}
+.modal{background:var(--bg-elevated);border-radius:var(--radius);padding:28px;max-width:760px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(42,34,28,.25)}
+.modal h2{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:26px;color:var(--terracotta);margin-bottom:16px}
+.qcard{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;background:var(--bg-card)}
+.qcard.chosen{border-color:rgba(184,156,90,.5);background:linear-gradient(180deg,rgba(184,156,90,.08),transparent)}
+.qcard-head{display:flex;gap:12px;justify-content:space-between;padding-bottom:12px;border-bottom:1px dashed var(--line);margin-bottom:12px}
+.qbox{flex:1;background:var(--bg-elevated);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.qbox .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--ink-muted);font-weight:700;margin-bottom:4px}
+.qbox .v-title{font-weight:700;font-size:16px}
+.qbox .v-desc{font-size:13px;color:var(--ink);line-height:1.5}
+.qcard-amt{font-size:22px;font-weight:700;align-self:center;white-space:nowrap}
+.badge{display:inline-block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;padding:2px 8px;border-radius:999px;font-weight:700;margin-top:4px}
+.badge.chosen-b{background:rgba(184,156,90,.22);color:#a07f3a}
+.badge.cheap-b{background:rgba(64,241,140,.20);color:#0d8246}
+
+/* Comments */
+.c-title{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--terracotta);margin-bottom:8px}
+.comment{display:flex;gap:10px;margin-bottom:10px}
+.avatar{width:38px;height:38px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;flex-shrink:0}
+.avatar.planner{background:var(--terracotta)}
+.avatar.bride{background:var(--rose)}
+.avatar.groom{background:var(--olive)}
+.bubble{flex:1;background:var(--bg-elevated);border:1px solid var(--line);border-radius:4px 14px 14px 14px;padding:10px 14px}
+.bubble .who{font-size:11px;text-transform:uppercase;letter-spacing:.15em;color:var(--terracotta);font-weight:700;margin-bottom:3px;display:flex;justify-content:space-between}
+.bubble .txt{font-size:14px;line-height:1.5;white-space:pre-wrap}
+.bubble .when{font-size:11px;color:var(--ink-muted);font-style:italic;margin-top:4px}
+.c-edit-btn{background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:12px;padding:0 4px}
+.c-edit-btn:hover{color:var(--terracotta)}
+.add-c{display:flex;gap:8px;margin-top:12px}
+.add-c input{flex:1;padding:9px 12px;border:1.5px solid rgba(184,92,60,.35);border-radius:var(--radius-sm);font-family:inherit;font-size:14px}
+.add-c input:focus{outline:none;border-color:var(--terracotta)}
+.btn-sm{padding:8px 16px;font-size:13px}
+.empty{text-align:center;color:var(--ink-muted);font-style:italic;padding:40px;font-family:'Cormorant Garamond',serif;font-size:18px}
+.loading{text-align:center;color:var(--ink-soft);padding:40px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="logo">Wedly</div>
+    <div class="sub">Bring Their Dream To Life</div>
+  </div>
+
+  <!-- PIN GATE -->
+  <div id="gate" class="gate">
+    <h1>Spazio Sposi</h1>
+    <p>Inserite il vostro nome e il PIN ricevuto dalla wedding planner.</p>
+    <div class="field">
+      <label>Chi sei?</label>
+      <select id="role-sel">
+        <option value="bride">Sposa</option>
+        <option value="groom">Sposo</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>PIN</label>
+      <input id="pin" class="pin-input" type="text" inputmode="numeric" maxlength="6" autocomplete="off">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doAuth()">Entra</button>
+    <div class="err" id="gate-err"></div>
+  </div>
+
+  <!-- CONTENT (after auth) -->
+  <div id="content" style="display:none"></div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+// ============================================
+// CONFIG — sostituisci con l'URL del tuo Worker
+// ============================================
+const API_BASE = 'https://wedly-api.TUO-SOTTODOMINIO.workers.dev';
+
+// Wedding ID dalla URL: ...index.html?w=ID_MATRIMONIO
+const WEDDING_ID = new URLSearchParams(location.search).get('w') || '';
+
+let session = { pin: '', role: 'bride' };
+let data = { couple: {}, sharedRows: [] };
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function money(n){n=Number(n)||0;const neg=n<0;n=Math.abs(n);const s=Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.');return (neg?'-':'')+s;}
+
+async function api(path, opts){
+  const res = await fetch(API_BASE + path, {
+    method: opts?.method || 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: opts?.body ? JSON.stringify(opts.body) : undefined,
+  });
+  const j = await res.json().catch(()=>({error:'Errore di rete'}));
+  if(!res.ok) throw new Error(j.error || 'Errore');
+  return j;
+}
+
+async function doAuth(){
+  const err = document.getElementById('gate-err');
+  err.textContent = '';
+  if(!WEDDING_ID){ err.textContent = 'Link non valido: manca l\'identificativo del matrimonio.'; return; }
+  session.role = document.getElementById('role-sel').value;
+  session.pin = document.getElementById('pin').value.trim();
+  if(!session.pin){ err.textContent = 'Inserisci il PIN.'; return; }
+  try{
+    const j = await api(`/wedding/${WEDDING_ID}/auth`, { method:'POST', body:{ pin: session.pin } });
+    data = { couple: j.couple || {}, sharedRows: j.sharedRows || [] };
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    renderContent();
+  }catch(e){
+    err.textContent = e.message === 'PIN errato' ? 'PIN errato, riprova.' : e.message;
+  }
+}
+
+function groupByCategory(){
+  const quotes = data.sharedRows.filter(r => r.category && r.amount != null && r.amount !== '');
+  const map = {};
+  quotes.forEach(q => { (map[q.category] = map[q.category] || []).push(q); });
+  return Object.entries(map).map(([name,rows]) => ({ name, rows: rows.sort((a,b)=>(a.amount||0)-(b.amount||0)) }))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+}
+
+function renderContent(){
+  const cats = groupByCategory();
+  const total = cats.reduce((s,c)=>{const ch=c.rows.find(r=>r.chosen);const min=Math.min(...c.rows.map(r=>r.amount||0));return s+(ch?(ch.amount||0):min);},0);
+  const c = data.couple;
+  let ceremonyMeta = '';
+  if(c.ceremonyType){
+    ceremonyMeta = 'Rito ' + esc(c.ceremonyType);
+    if(c.ceremonyType==='religioso' && c.ceremonyChurch) ceremonyMeta += ' · presso ' + esc(c.ceremonyChurch);
+    if(c.ceremonyLocation) ceremonyMeta += ' · ' + esc(c.ceremonyLocation);
+  } else if(c.ceremonyLocation){ ceremonyMeta = esc(c.ceremonyLocation); }
+
+  document.getElementById('content').innerHTML = `
+    <div class="couple-head">
+      <div class="names">${esc(c.bride||'Sposa')} <span class="amp">&amp;</span> ${esc(c.groom||'Sposo')}</div>
+      ${c.date ? `<div class="meta">${esc(formatDate(c.date))}</div>` : ''}
+      ${ceremonyMeta ? `<div class="meta">${ceremonyMeta}</div>` : ''}
+    </div>
+    ${total>0 ? `<div class="total-banner"><div class="icon">🧾</div><div><div class="headline">Totale Preventivo: <strong>€ ${money(total)}</strong></div></div></div>` : ''}
+    ${cats.length===0 ? `<div class="empty">La vostra wedding planner non ha ancora aggiunto preventivi.</div>` : `
+      <div class="qt-wrap"><table>
+        <thead><tr><th>Fornitore</th><th>Importo</th><th>N° Preventivi</th></tr></thead>
+        <tbody>${cats.map(renderCatRow).join('')}</tbody>
+      </table></div>
+    `}
+  `;
+}
+
+function renderCatRow(cat){
+  const chosen = cat.rows.find(r=>r.chosen);
+  const min = Math.min(...cat.rows.map(r=>r.amount||0));
+  const totalC = cat.rows.reduce((s,r)=>s+((r.comments||[]).length),0);
+  const key = cat.name.replace(/[^a-zA-Z0-9_]/g,'_');
+  return `<tr>
+    <td><div class="cat-name">${esc(cat.name)}</div>${chosen?`<div class="cat-sub">${esc(chosen.title)}</div>`:(cat.rows.length>1?`<div class="cat-sub">${cat.rows.length} opzioni</div>`:'')}</td>
+    <td><div class="amt">€ ${money(chosen?chosen.amount:min)}</div></td>
+    <td>
+      <button class="count-btn" onclick="openCat('${key}')">${cat.rows.length} ▸</button>
+      <span class="comments-count">💬 ${totalC}</span>
+    </td>
+  </tr>`;
+}
+
+function openCat(key){
+  const cats = groupByCategory();
+  const cat = cats.find(c => c.name.replace(/[^a-zA-Z0-9_]/g,'_') === key);
+  if(!cat) return;
+  const cheapest = Math.min(...cat.rows.map(r=>r.amount||0));
+  const hasMulti = cat.rows.length>1;
+  document.getElementById('modal').innerHTML = `
+    <h2>${esc(cat.name)}</h2>
+    ${cat.rows.map(r=>renderQCard(r,cheapest,hasMulti)).join('')}
+    <div style="text-align:right;margin-top:8px"><button class="btn btn-primary btn-sm" onclick="closeModal()">Chiudi</button></div>
+  `;
+  document.getElementById('overlay').classList.add('active');
+}
+
+function renderQCard(r,cheapest,hasMulti){
+  const isCheap = (r.amount||0)===cheapest && hasMulti;
+  return `<div class="qcard ${r.chosen?'chosen':''}" id="qc-${r.id}">
+    <div class="qcard-head">
+      <div class="qbox"><div class="lbl">Fornitore</div><div class="v-title">${esc(r.title)}</div>
+        ${r.chosen?'<span class="badge chosen-b">⭐ Scelto</span>':(isCheap?'<span class="badge cheap-b">+ economico</span>':'')}</div>
+      <div class="qbox"><div class="lbl">Dettaglio Servizio</div><div class="v-desc">${r.description?esc(r.description):'—'}</div></div>
+      <div class="qcard-amt">€ ${money(r.amount||0)}</div>
+    </div>
+    <div class="c-title">Commenti</div>
+    <div class="clist" data-for="${r.id}">${renderComments(r.comments||[])}</div>
+    <div class="add-c">
+      <input id="ci-${r.id}" type="text" placeholder="Scrivi un commento..." onkeydown="if(event.key==='Enter')addComment('${r.id}')">
+      <button class="btn btn-primary btn-sm" onclick="addComment('${r.id}')">Invia</button>
+    </div>
+  </div>`;
+}
+
+function renderComments(comments){
+  if(!comments.length) return '<div style="color:var(--ink-muted);font-style:italic;font-size:13px">Nessun commento ancora.</div>';
+  return comments.map(c=>{
+    const who = c.role==='planner'?'Planner':(c.role==='bride'?(data.couple.bride||'Sposa'):(data.couple.groom||'Sposo'));
+    const canEdit = c.role===session.role;
+    return `<div class="comment" data-cid="${c.id}">
+      <div class="avatar ${c.role}">${esc(who.charAt(0).toUpperCase())}</div>
+      <div class="bubble">
+        <div class="who"><span>${esc(who)}</span>${canEdit?`<button class="c-edit-btn" onclick="editComment('${c.id}')">✎ modifica</button>`:''}</div>
+        <div class="txt" id="ct-${c.id}">${esc(c.text)}</div>
+        <div class="when">${esc(c.when||'')}${c.edited?' · modificato':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addComment(rowId){
+  const input = document.getElementById('ci-'+rowId);
+  const text = input.value.trim();
+  if(!text) return;
+  try{
+    const j = await api(`/wedding/${WEDDING_ID}/comment`, { method:'POST', body:{ pin:session.pin, rowId, role:session.role, text } });
+    const row = data.sharedRows.find(r=>r.id===rowId);
+    if(row){ if(!row.comments) row.comments=[]; row.comments.push(j.comment); }
+    document.querySelector(`[data-for="${rowId}"]`).innerHTML = renderComments(row.comments);
+    input.value=''; input.focus();
+  }catch(e){ alert(e.message); }
+}
+
+function editComment(cid){
+  const row = data.sharedRows.find(r=>(r.comments||[]).some(c=>c.id===cid));
+  if(!row) return;
+  const c = row.comments.find(x=>x.id===cid);
+  const el = document.getElementById('ct-'+cid);
+  el.innerHTML = `<textarea id="ce-${cid}" style="width:100%;padding:8px;border:1.5px solid var(--terracotta);border-radius:8px;font-family:inherit;font-size:14px" rows="2">${esc(c.text)}</textarea>
+    <div style="text-align:right;margin-top:6px"><button class="btn btn-sm" onclick="renderRowComments('${row.id}')" style="background:var(--line)">Annulla</button>
+    <button class="btn btn-primary btn-sm" onclick="saveEdit('${row.id}','${cid}')">Salva</button></div>`;
+  document.getElementById('ce-'+cid).focus();
+}
+
+function renderRowComments(rowId){
+  const row = data.sharedRows.find(r=>r.id===rowId);
+  document.querySelector(`[data-for="${rowId}"]`).innerHTML = renderComments(row.comments||[]);
+}
+
+async function saveEdit(rowId,cid){
+  const text = document.getElementById('ce-'+cid).value.trim();
+  if(!text) return;
+  try{
+    await api(`/wedding/${WEDDING_ID}/comment/edit`, { method:'POST', body:{ pin:session.pin, rowId, commentId:cid, role:session.role, text } });
+    const row = data.sharedRows.find(r=>r.id===rowId);
+    const c = row.comments.find(x=>x.id===cid);
+    c.text=text; c.edited=true;
+    renderRowComments(rowId);
+  }catch(e){ alert(e.message); }
+}
+
+function closeModal(){ document.getElementById('overlay').classList.remove('active'); }
+
+function formatDate(iso){
+  if(!iso) return '';
+  const months=['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const d=new Date(iso);
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+document.getElementById('pin').addEventListener('keydown', e=>{ if(e.key==='Enter') doAuth(); });
+</script>
+</body>
+</html>
