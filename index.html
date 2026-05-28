@@ -299,6 +299,18 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+.sync-badge {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  margin-bottom: 8px;
+  min-height: 14px;
+  transition: color .2s;
+}
+.sync-badge.saving { color: var(--ink-muted); }
+.sync-badge.saved { color: var(--olive); }
+.sync-badge.error { color: var(--burgundy); }
+.sync-badge.offline { color: #c87f1c; }
 
 .main {
   padding: 48px 56px 80px;
@@ -3794,6 +3806,40 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
   </div>
 </div>
 
+<!-- ===== CONNECT (CLOUD) SCREEN ===== -->
+<div id="connect-screen" class="setup-screen" style="display:none">
+  <div class="setup-card">
+    <div class="brand-logo-big" role="img" aria-label="Veronica Cosimo - Wedding Planner & Designer"></div>
+    <h2>Connetti il cloud</h2>
+    <p class="desc">I dati vengono salvati online in modo che gli sposi possano vederli in tempo reale. Questi dati restano <strong>solo su questo dispositivo</strong> e servono una volta sola.</p>
+    <div class="field" style="margin-bottom:14px">
+      <label>URL del Worker (API)</label>
+      <input id="connect-api" class="no-cap" type="text" placeholder="https://wedly-api.tuonome.workers.dev">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Token segreto (ADMIN_TOKEN)</label>
+      <input id="connect-token" class="no-cap" type="password" placeholder="il Secret impostato nel Worker">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>URL del portale sposi</label>
+      <input id="connect-portal" class="no-cap" type="text" placeholder="https://wedly-newlyweds.pages.dev">
+    </div>
+    <div class="pin-error" id="connect-error" style="min-height:18px"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" onclick="doConnect()">Connetti</button>
+    <div class="couple-access-link" onclick="showPinEntry()">
+      Sei uno degli sposi? <strong>Accedi con il tuo PIN →</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ===== LOADING SCREEN ===== -->
+<div id="loading-screen" class="setup-screen" style="display:none">
+  <div class="setup-card" style="text-align:center">
+    <div class="brand-logo-big" role="img" aria-label="Veronica Cosimo - Wedding Planner & Designer"></div>
+    <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--ink-soft);margin-top:10px">Caricamento in corso…</div>
+  </div>
+</div>
+
 <!-- ===== PIN ENTRY SCREEN ===== -->
 <div id="pin-screen" class="pin-entry-screen" style="display:none">
   <div class="pin-entry-card">
@@ -3884,6 +3930,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
     </nav>
 
     <div class="sidebar-footer">
+      <div id="sync-badge" class="sync-badge"></div>
       <div style="cursor:pointer;color:var(--terracotta);margin-bottom:8px;font-weight:600" onclick="showPinEntry()">↗ Modalità Sposi</div>
       v 1.0 · Italia
     </div>
@@ -3974,70 +4021,248 @@ let calendarMonth = (function() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 })();
 
-function saveData(immediate) {
-  if (_saveTimer) clearTimeout(_saveTimer);
-  const doWrite = () => {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); }
-    catch (e) { console.error('Save failed', e); toast('Errore di salvataggio'); }
-  };
-  if (immediate) { doWrite(); return; }
-  _saveTimer = setTimeout(doWrite, 120);
+// ============================================
+// CLOUD-PRIMARY DATA LAYER
+// Il cloud (Worker + KV) è la fonte primaria. localStorage resta solo
+// come copia di sicurezza locale (per non perdere dati se la rete cade).
+// ============================================
+const CLOUD_KEY = 'wp_cloud_config';
+
+// ─────────────────────────────────────────────────────────────
+//  CONFIGURAZIONE CLOUD AUTOMATICA
+//  Compila questi 3 valori UNA VOLTA e l'app si collega da sola
+//  a ogni apertura, senza mostrare la schermata "Connetti".
+//  (Se li lasci vuoti, comparirà la schermata di connessione manuale.)
+// ─────────────────────────────────────────────────────────────
+const CLOUD_DEFAULTS = {
+  apiBase:    'https://wedly.devidbilli94.workers.dev',
+  adminToken: 'ZMguIipWiN4bJ0W1hZT68iZYxleC6Dm-EFkl1oYKa0s',
+  portalBase: 'https://wedly-newlyweds.pages.dev',  // cambia se la Page sposi ha un altro nome
+};
+function hasCloudDefaults() {
+  return !!(CLOUD_DEFAULTS.apiBase && CLOUD_DEFAULTS.adminToken && CLOUD_DEFAULTS.portalBase);
 }
 
-function loadData() {
+let cloudCfg = null;          // { apiBase, adminToken, portalBase }
+let _indexTimer = null;
+
+function getCloudCfg() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CLOUD_KEY) || 'null');
+    if (saved && saved.apiBase && saved.adminToken && saved.portalBase) return saved;
+  } catch {}
+  if (hasCloudDefaults()) return { ...CLOUD_DEFAULTS };
+  return null;
+}
+function setCloudCfg(c) { localStorage.setItem(CLOUD_KEY, JSON.stringify(c)); cloudCfg = c; }
+function normalizeBase(u) { return (u || '').trim().replace(/\/+$/, ''); }
+
+function setSyncBadge(s) {
+  const el = document.getElementById('sync-badge');
+  if (!el) return;
+  const map = {
+    saving:  ['● Salvataggio…', 'saving'],
+    saved:   ['● Sincronizzato', 'saved'],
+    error:   ['● Errore di salvataggio', 'error'],
+    offline: ['● Offline — modifiche non salvate', 'offline'],
+  };
+  const [txt, cls] = map[s] || ['', ''];
+  el.textContent = txt;
+  el.className = 'sync-badge ' + cls;
+}
+
+async function cloudFetch(path, opts = {}) {
+  const res = await fetch(cloudCfg.apiBase + path, {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cloudCfg.adminToken },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  let data = {};
+  try { data = await res.json(); } catch {}
+  if (!res.ok) throw new Error(data.error || ('Errore ' + res.status));
+  return data;
+}
+
+function cacheLocal() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+
+// Salva il PROGETTO ATTIVO sul cloud (con debounce) + copia locale
+function saveData(immediate) {
+  cacheLocal();
+  if (!cloudCfg || !state) return;
+  if (_saveTimer) clearTimeout(_saveTimer);
+  const doPush = async () => {
+    setSyncBadge('saving');
+    try {
+      await cloudFetch('/wedding/' + state.id, { method: 'PUT', body: state });
+      setSyncBadge('saved');
+    } catch (e) {
+      setSyncBadge(navigator.onLine ? 'error' : 'offline');
+    }
+  };
+  if (immediate) { doPush(); return; }
+  _saveTimer = setTimeout(doPush, 700);
+}
+
+// Salva l'indice dei progetti (lista + progetto attivo)
+function saveIndex(immediate) {
+  cacheLocal();
+  if (!cloudCfg) return;
+  if (_indexTimer) clearTimeout(_indexTimer);
+  const doPush = async () => {
+    try {
+      await cloudFetch('/planner/index', { method: 'PUT', body: {
+        projectIds: store.projects.map(p => p.id),
+        activeProjectId: store.activeProjectId,
+      }});
+    } catch (e) { /* riprova alla prossima modifica */ }
+  };
+  if (immediate) { doPush(); return; }
+  _indexTimer = setTimeout(doPush, 700);
+}
+
+// Applica le migrazioni storiche (PIN mancanti, pagamenti) a store.projects
+function runMigrations() {
+  if (!store.projects || !store.projects.length) return;
+  store.projects.forEach(p => {
+    if (!p.pin) p.pin = generatePin();
+    p.tasks?.forEach(t => {
+      if (!Array.isArray(t.payments)) {
+        t.payments = [];
+        if (t.deposit && Number(t.deposit) > 0) {
+          t.payments.push({ id: uid(), amount: Number(t.deposit), date: t.depositDate || '' });
+        }
+        delete t.deposit; delete t.depositDate;
+      }
+    });
+  });
+}
+
+// Carica lo store dal cloud
+async function cloudLoad() {
+  const data = await cloudFetch('/planner/store');
+  store.projects = data.projects || [];
+  store.activeProjectId = data.activeProjectId || (store.projects[0]?.id || null);
+  runMigrations();
+  state = store.projects.find(p => p.id === store.activeProjectId) || null;
+  cacheLocal();
+}
+
+// Se il cloud è vuoto ma c'è roba salvata in locale (vecchio uso), la carica online
+async function migrateLocalToCloudIfNeeded() {
+  if (store.projects.length > 0) return;
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch {}
+  if (!local || !local.projects || !local.projects.length) {
+    // prova il formato legacy a progetto singolo
+    try {
+      const old = JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null');
+      if (old && old.couple && (old.couple.bride || old.couple.groom)) {
+        const p = newProject(old.couple.bride, old.couple.groom, old.couple.date);
+        p.appointments = old.appointments || [];
+        p.tasks = old.tasks || [];
+        p.designs = old.designs || [];
+        p.transactions = old.transactions || [];
+        p.sharedRows = old.sharedRows || [];
+        local = { projects: [p], activeProjectId: p.id };
+      }
+    } catch {}
+  }
+  if (local && local.projects && local.projects.length) {
+    store.projects = local.projects;
+    store.activeProjectId = local.activeProjectId || local.projects[0].id;
+    runMigrations();
+    for (const p of store.projects) {
+      await cloudFetch('/wedding/' + p.id, { method: 'PUT', body: p });
+    }
+    await saveIndex(true);
+    state = store.projects.find(p => p.id === store.activeProjectId) || null;
+    cacheLocal();
+  }
+}
+
+// Fallback offline: carica la copia locale se il cloud non risponde
+function loadLocalCache() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
-    if (raw) {
-      const loaded = JSON.parse(raw);
-      store.projects = loaded.projects || [];
-      store.activeProjectId = loaded.activeProjectId || (store.projects[0]?.id || null);
-    } else {
-      // Migrate from old single-project format if present
-      const legacy = localStorage.getItem(LEGACY_KEY);
-      if (legacy) {
-        try {
-          const old = JSON.parse(legacy);
-          if (old.couple && (old.couple.bride || old.couple.groom)) {
-            const p = newProject(old.couple.bride, old.couple.groom, old.couple.date);
-            p.appointments = old.appointments || [];
-            p.tasks = old.tasks || [];
-            p.designs = old.designs || [];
-            p.transactions = old.transactions || [];
-            p.sharedRows = old.sharedRows || [];
-            p.currentRole = old.currentRole || 'planner';
-            store.projects.push(p);
-            store.activeProjectId = p.id;
-            saveData(true);
-          }
-        } catch(e) { /* ignore */ }
+    if (!raw) return false;
+    const loaded = JSON.parse(raw);
+    if (!loaded.projects || !loaded.projects.length) return false;
+    store.projects = loaded.projects;
+    store.activeProjectId = loaded.activeProjectId || loaded.projects[0].id;
+    runMigrations();
+    state = store.projects.find(p => p.id === store.activeProjectId) || null;
+    return true;
+  } catch { return false; }
+}
+
+// Ricarica i dati dal cloud (utile per vedere i commenti aggiunti dagli sposi)
+async function refreshFromCloud() {
+  if (!cloudCfg) return;
+  setSyncBadge('saving');
+  try {
+    await cloudLoad();
+    setSyncBadge('saved');
+    updateCoupleDisplay();
+    render();
+    toast('Aggiornato dal cloud');
+  } catch (e) {
+    setSyncBadge(navigator.onLine ? 'error' : 'offline');
+    toast('Impossibile aggiornare');
+  }
+}
+
+// ---- Polling automatico dei commenti degli sposi (ogni 30s) ----
+let _pollTimer = null;
+
+function startCloudPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  if (!cloudCfg) return;
+  _pollTimer = setInterval(pollComments, 30000);
+}
+
+async function pollComments() {
+  if (!cloudCfg) return;
+  if (document.visibilityState && document.visibilityState !== 'visible') return;
+  if (coupleSession.role) return; // non in modalità sposi
+  try {
+    const data = await cloudFetch('/planner/comments');
+    const changed = mergeCloudComments(data.comments || {});
+    if (changed) {
+      // Aggiorna la vista solo se non c'è un modale aperto (per non disturbare un'azione in corso)
+      const modalOpen = document.getElementById('modal-overlay')?.classList.contains('active');
+      updateFloatingReminders && updateFloatingReminders();
+      if (!modalOpen && (currentView === 'shared' || currentView === 'couple' || currentView === 'reminders')) {
+        render();
       }
     }
-  } catch (e) { /* nothing saved yet */ }
-  // Ensure every project has a PIN (migration for older saves)
-  if (store.projects?.length) {
-    let needsSave = false;
-    store.projects.forEach(p => {
-      if (!p.pin) { p.pin = generatePin(); needsSave = true; }
-      // Migrate single-deposit tasks to multi-payment format
-      p.tasks?.forEach(t => {
-        if (!Array.isArray(t.payments)) {
-          t.payments = [];
-          if (t.deposit && Number(t.deposit) > 0) {
-            t.payments.push({
-              id: uid(),
-              amount: Number(t.deposit),
-              date: t.depositDate || ''
-            });
-          }
-          delete t.deposit;
-          delete t.depositDate;
-          needsSave = true;
-        }
-      });
+  } catch (e) { /* riprova al prossimo giro */ }
+}
+
+// Unisce i commenti remoti a quelli locali SENZA cancellare commenti aggiunti
+// localmente e non ancora sincronizzati (unione per id).
+function mergeCloudComments(byWedding) {
+  let changed = false;
+  Object.keys(byWedding).forEach(wid => {
+    const local = store.projects.find(p => p.id === wid);
+    if (!local) return;
+    const rows = byWedding[wid] || {};
+    Object.keys(rows).forEach(rowId => {
+      const lr = (local.sharedRows || []).find(r => r.id === rowId);
+      if (!lr) return;
+      const remoteComments = rows[rowId] || [];
+      const remoteIds = new Set(remoteComments.map(c => c.id));
+      const merged = remoteComments.slice();
+      (lr.comments || []).forEach(c => { if (!remoteIds.has(c.id)) merged.push(c); });
+      if (JSON.stringify(merged) !== JSON.stringify(lr.comments || [])) {
+        lr.comments = merged;
+        changed = true;
+      }
     });
-    if (needsSave) saveData(true);
-  }
-  state = store.projects.find(p => p.id === store.activeProjectId) || null;
+  });
+  if (changed) cacheLocal();
+  return changed;
 }
 
 // Click on a wedding card in reminders: switch project & re-render reminders
@@ -4047,7 +4272,7 @@ function selectWeddingFromReminders(id) {
   if (!p) return;
   store.activeProjectId = id;
   state = p;
-  saveData(true);
+  saveIndex(true);
   updateCoupleDisplay();
   render();
 }
@@ -4057,7 +4282,7 @@ function setActiveProject(id) {
   if (!p) return;
   store.activeProjectId = id;
   state = p;
-  saveData(true);
+  saveIndex(true);
   updateCoupleDisplay();
   navigateTo('reminders');
 }
@@ -4067,7 +4292,8 @@ function createProject(bride, groom, date, ceremonyType, ceremonyLocation, cerem
   store.projects.push(p);
   store.activeProjectId = p.id;
   state = p;
-  saveData(true);
+  saveData(true);    // crea wedding:{id} sul cloud (il Worker lo aggiunge all'index)
+  saveIndex(true);   // fissa activeProjectId
   return p;
 }
 
@@ -4077,7 +4303,11 @@ function deleteProject(id) {
     store.activeProjectId = store.projects[0]?.id || null;
     state = store.projects[0] || null;
   }
-  saveData(true);
+  cacheLocal();
+  if (cloudCfg) {
+    cloudFetch('/wedding/' + id, { method: 'DELETE' }).catch(() => {});
+    saveIndex(true);
+  }
 }
 
 // ============================================
@@ -4219,18 +4449,76 @@ function updateCoupleDisplay() {
     date ? formatDate(date) : 'Data da definire';
 }
 
+function hideAllScreens() {
+  ['setup-screen','app','pin-screen','couple-mode-screen','connect-screen','loading-screen']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+}
+
 function showSetup() {
+  hideAllScreens();
   document.getElementById('setup-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('pin-screen').style.display = 'none';
-  document.getElementById('couple-mode-screen').style.display = 'none';
 }
 function showApp() {
-  document.getElementById('setup-screen').style.display = 'none';
+  hideAllScreens();
   document.getElementById('app').style.display = 'grid';
-  document.getElementById('pin-screen').style.display = 'none';
-  document.getElementById('couple-mode-screen').style.display = 'none';
   updateCoupleDisplay();
+}
+function showLoading() {
+  hideAllScreens();
+  document.getElementById('loading-screen').style.display = 'flex';
+}
+function showConnect(errMsg) {
+  hideAllScreens();
+  document.getElementById('connect-screen').style.display = 'flex';
+  const cfg = getCloudCfg();
+  if (cfg) {
+    const a = document.getElementById('connect-api');
+    const t = document.getElementById('connect-token');
+    const p = document.getElementById('connect-portal');
+    if (a) a.value = cfg.apiBase || '';
+    if (t) t.value = cfg.adminToken || '';
+    if (p) p.value = cfg.portalBase || '';
+  }
+  const err = document.getElementById('connect-error');
+  if (err) err.textContent = errMsg || '';
+}
+
+async function doConnect() {
+  const cfg = {
+    apiBase: normalizeBase(document.getElementById('connect-api').value),
+    adminToken: document.getElementById('connect-token').value.trim(),
+    portalBase: normalizeBase(document.getElementById('connect-portal').value),
+  };
+  const err = document.getElementById('connect-error');
+  if (!cfg.apiBase || !cfg.adminToken || !cfg.portalBase) {
+    err.textContent = 'Compila tutti e tre i campi.';
+    return;
+  }
+  err.textContent = '';
+  showLoading();
+  cloudCfg = cfg;
+  try {
+    await cloudFetch('/planner/login', { method: 'POST', body: {} });
+    setCloudCfg(cfg);
+    await cloudLoad();
+    await migrateLocalToCloudIfNeeded();
+    bootUI();
+  } catch (e) {
+    cloudCfg = null;
+    showConnect('Connessione fallita: ' + e.message);
+  }
+}
+
+function bootUI() {
+  if (!state || !state.couple.bride || !state.couple.groom) {
+    showSetup();
+  } else {
+    showApp();
+    navigateTo('reminders');
+  }
+  setSyncBadge('saved');
+  startCloudPolling();
+  disableInputSuggestions();
 }
 
 // ============================================
@@ -5288,6 +5576,18 @@ function renderCouple() {
         <button class="btn btn-ghost btn-sm" onclick="regeneratePin('${state.id}')">Rigenera</button>
       </div>
     </div>
+
+    <div class="section-divider"><div class="title">Condivisione Online</div><div class="line"></div></div>
+    <div class="card elevated" style="max-width:560px;margin-bottom:24px">
+      <p style="color:var(--ink-soft);font-size:14px;line-height:1.6;margin-bottom:18px">
+        I dati sono salvati online e si aggiornano da soli: gli sposi vedono sempre la versione più recente
+        accedendo col PIN, e i loro commenti compaiono qui automaticamente.
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="showCoupleLink()">Link per gli sposi</button>
+        <button class="btn btn-ghost" onclick="openCloudSettings()">⚙ Impostazioni cloud</button>
+      </div>
+    </div>
   `;
 }
 
@@ -5304,6 +5604,88 @@ function saveCouple() {
   saveData();
   updateCoupleDisplay();
   toast('Salvato');
+}
+
+// ============================================
+// CONDIVISIONE: link + PIN per gli sposi
+// I dati sono già sul cloud (auto-sync), qui mostriamo solo come accedervi.
+// ============================================
+function coupleLink() {
+  if (!cloudCfg || !cloudCfg.portalBase || !state) return '';
+  return `${cloudCfg.portalBase}/?w=${state.id}`;
+}
+
+function showCoupleLink() {
+  if (!cloudCfg || !cloudCfg.portalBase) {
+    openCloudSettings();
+    return;
+  }
+  const link = coupleLink();
+  openModal(`
+    <div style="text-align:center;padding:6px 0">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:44px;color:var(--terracotta);font-style:italic;line-height:1">✿</div>
+      <h2 style="margin-bottom:6px">Link per gli sposi</h2>
+      <p style="color:var(--ink-soft);font-size:14px;margin-bottom:22px">
+        ${esc(state.couple.bride) || 'Sposa'} &amp; ${esc(state.couple.groom) || 'Sposo'} accedono da qui con il PIN. I dati sono già online e si aggiornano da soli.
+      </p>
+      <div style="text-align:left;background:var(--bg-card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:18px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink-muted);font-weight:700;margin-bottom:6px">Link</div>
+        <div style="font-size:13px;word-break:break-all;color:var(--terracotta);margin-bottom:14px">${esc(link)}</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.15em;color:var(--ink-muted);font-weight:700;margin-bottom:6px">PIN</div>
+        <div style="font-family:'Manrope',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.3em;color:var(--ink)">${state.pin.split('').join(' ')}</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="copyText('${esc(link)}','Link copiato')">Copia link</button>
+        <button class="btn btn-ghost" onclick="copyText('${state.pin}','PIN copiato')">Copia PIN</button>
+        <button class="btn btn-ghost" onclick="closeModal()">Chiudi</button>
+      </div>
+    </div>
+  `);
+}
+
+function openCloudSettings() {
+  const cfg = getCloudCfg() || {};
+  openModal(`
+    <h2>Impostazioni cloud</h2>
+    <p style="color:var(--ink-soft);font-size:13px;margin-bottom:20px;line-height:1.5">
+      Restano salvate <strong>solo su questo dispositivo</strong>. Modificale solo se cambi Worker o portale.
+    </p>
+    <div class="field" style="margin-bottom:14px">
+      <label>URL del Worker (API)</label>
+      <input id="cfg-api" class="no-cap" type="text" placeholder="https://wedly-api.tuonome.workers.dev" value="${esc(cfg.apiBase || '')}">
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Token segreto (ADMIN_TOKEN)</label>
+      <input id="cfg-token" class="no-cap" type="password" placeholder="il Secret del Worker" value="${esc(cfg.adminToken || '')}">
+    </div>
+    <div class="field" style="margin-bottom:20px">
+      <label>URL del portale sposi</label>
+      <input id="cfg-portal" class="no-cap" type="text" placeholder="https://wedly-newlyweds.pages.dev" value="${esc(cfg.portalBase || '')}">
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="saveCloudSettings()">Salva</button>
+    </div>
+  `);
+}
+
+function saveCloudSettings() {
+  const cfg = {
+    apiBase: normalizeBase(document.getElementById('cfg-api').value),
+    adminToken: document.getElementById('cfg-token').value.trim(),
+    portalBase: normalizeBase(document.getElementById('cfg-portal').value),
+  };
+  if (!cfg.apiBase || !cfg.adminToken || !cfg.portalBase) {
+    toast('Compila tutti e tre i campi');
+    return;
+  }
+  setCloudCfg(cfg);
+  closeModal();
+  toast('Impostazioni cloud salvate');
+}
+
+function copyText(text, msg) {
+  navigator.clipboard.writeText(text).then(() => toast(msg || 'Copiato')).catch(() => toast('Copia non riuscita'));
 }
 
 // ============================================
@@ -7116,18 +7498,32 @@ function renderBudgetChart(transactions) {
 // ============================================
 // INIT
 // ============================================
-(function init() {
-  loadData();
+(async function init() {
   setupPinInputs();
   setupAutoCapitalize();
   initFloatingReminders();
-  if (!state || !state.couple.bride || !state.couple.groom) {
-    showSetup();
-  } else {
-    showApp();
-    navigateTo('reminders');
+  cloudCfg = getCloudCfg();
+
+  if (!cloudCfg) {
+    showConnect();
+    disableInputSuggestions();
+    return;
   }
-  // Strip suggestions from any input already in the page
+
+  showLoading();
+  try {
+    await cloudLoad();
+    await migrateLocalToCloudIfNeeded();
+    bootUI();
+  } catch (e) {
+    if (loadLocalCache()) {
+      bootUI();
+      setSyncBadge(navigator.onLine ? 'error' : 'offline');
+      toast('Modalità offline: modifiche non sincronizzate');
+    } else {
+      showConnect('Impossibile connettersi: ' + e.message);
+    }
+  }
   disableInputSuggestions();
 })();
 
