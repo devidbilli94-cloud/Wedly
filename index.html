@@ -3867,6 +3867,69 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .vmodal-status button { border:none; background:var(--bg); padding:6px 12px; font-size:12px; cursor:pointer; color:var(--ink-soft); }
 .vmodal-status button.on-saved { background:var(--rosé); color:#fff; }
 .vmodal-status button.on-booked { background:var(--olive); color:#fff; }
+
+/* ===== PIANIFICAZIONE (impegni) ===== */
+.plan-progress { background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; margin-bottom:20px; }
+.plan-progress-text { font-size:14px; color:var(--ink-soft); margin-bottom:10px; }
+.plan-progress-text strong { color:var(--ink); }
+.plan-progress-bar { height:8px; background:var(--line); border-radius:99px; overflow:hidden; }
+.plan-progress-fill { height:100%; background:linear-gradient(90deg,#4a6e45,var(--gold)); border-radius:99px; transition:width .3s; }
+
+.plan-layout { display:grid; grid-template-columns:240px 1fr; gap:24px; align-items:start; }
+@media (max-width:860px){ .plan-layout{ grid-template-columns:1fr; } }
+
+.plan-sidebar { position:sticky; top:20px; }
+.plan-side-sec { margin-bottom:22px; }
+.plan-side-title { font-size:11px; text-transform:uppercase; letter-spacing:0.13em; color:var(--ink-muted); font-weight:700; margin-bottom:10px; }
+.plan-side-item { display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-soft); padding:6px 10px; border-radius:8px; cursor:pointer; transition:all .12s; }
+.plan-side-item:hover { background:var(--bg-card); color:var(--ink); }
+.plan-side-item.active { background:rgba(94,130,94,0.10); color:var(--terracotta); font-weight:600; }
+.plan-side-item .ps-count { margin-left:auto; font-size:12px; color:var(--ink-muted); }
+.plan-side-item.active .ps-count { color:var(--terracotta); }
+.plan-side-item .pdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.plan-side-item .pdot.pending { background:#d99a3c; }
+.plan-side-item .pdot.done { background:var(--olive); }
+.plan-active-filters { display:flex; flex-direction:column; gap:6px; }
+.plan-fchip { display:inline-flex; align-items:center; gap:7px; background:var(--bg-card); border:1px solid var(--line); border-radius:99px; padding:5px 12px; font-size:13px; color:var(--ink); width:fit-content; }
+.plan-fchip button { background:none; border:none; cursor:pointer; color:var(--ink-muted); font-size:13px; padding:0; line-height:1; }
+.plan-fchip button:hover { color:var(--burgundy); }
+.plan-budget-mini { background:var(--bg-card); border:1px solid var(--line); border-radius:12px; padding:14px; }
+.plan-budget-mini .pbm-row { display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+.plan-budget-mini .pbm-row:last-child { margin-bottom:0; }
+.plan-budget-mini .pbm-row .lab { color:var(--ink-muted); }
+.plan-budget-mini .pbm-row .val { font-weight:600; color:var(--ink); }
+.plan-budget-mini .pbm-row.rem .val { color:var(--burgundy); }
+
+.plan-quickadd { display:flex; align-items:center; gap:12px; background:var(--bg-card); border:1px solid var(--line); border-radius:14px; padding:8px 14px; margin-bottom:24px; }
+.plan-quickadd .pq-plus { width:32px; height:32px; border-radius:50%; border:2px solid var(--terracotta); background:none; color:var(--terracotta); font-size:20px; line-height:1; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+.plan-quickadd .pq-plus:hover { background:var(--terracotta); color:#fff; }
+.plan-quickadd input { flex:1; border:none; background:none; font-family:inherit; font-size:15px; color:var(--ink); padding:6px 0; }
+.plan-quickadd input:focus { outline:none; }
+
+.plan-group { margin-bottom:28px; }
+.plan-group-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+.plan-group-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600; color:var(--ink); }
+.plan-group-date { font-size:12px; color:var(--ink-muted); font-style:italic; }
+.plan-group-list { display:flex; flex-direction:column; gap:10px; }
+
+.impegno-row { display:flex; align-items:flex-start; gap:14px; background:var(--bg-card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; transition:border-color .15s; }
+.impegno-row:hover { border-color:var(--terracotta); }
+.impegno-row.done { opacity:0.62; }
+.impegno-check { width:24px; height:24px; border-radius:50%; border:2px solid var(--line); flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; margin-top:1px; }
+.impegno-check:hover { border-color:var(--olive); }
+.impegno-check.checked { background:var(--olive); border-color:var(--olive); color:#fff; }
+.impegno-body { flex:1; cursor:pointer; min-width:0; }
+.impegno-title { font-size:15px; color:var(--ink); margin-bottom:7px; line-height:1.35; }
+.impegno-row.done .impegno-title { text-decoration:line-through; color:var(--ink-muted); }
+.impegno-tags { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.imp-tag { font-size:11.5px; padding:2px 9px; border-radius:99px; line-height:1.5; }
+.imp-tag.essential { background:rgba(217,154,60,0.16); color:#b9772a; font-weight:600; }
+.imp-tag.cat { background:var(--bg); border:1px solid var(--line); color:var(--ink-soft); }
+.imp-amount { font-size:12.5px; color:var(--ink-soft); display:inline-flex; align-items:center; gap:4px; }
+.impegno-del { background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:15px; padding:4px 6px; border-radius:6px; line-height:1; flex-shrink:0; }
+.impegno-del:hover { color:var(--burgundy); background:rgba(122,46,59,0.08); }
+.essential-toggle { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer; padding:9px 0; }
+.essential-toggle input { width:18px; height:18px; accent-color:var(--terracotta); }
 </style>
 </head>
 <body>
@@ -6480,98 +6543,201 @@ function deleteAppointment(id) {
 // ============================================
 // VIEW: PLANNING (tasks)
 // ============================================
+const PLANNING_TIMEFRAMES = [
+  { key: '12+',   label: 'Oltre 12 mesi prima', months: null },
+  { key: '9-12',  label: '9–12 mesi prima',     months: 12 },
+  { key: '6-9',   label: '6–9 mesi prima',      months: 9 },
+  { key: '4-6',   label: '4–6 mesi prima',      months: 6 },
+  { key: '2-3',   label: '2–3 mesi prima',      months: 3 },
+  { key: '1-2',   label: '1–2 mesi prima',      months: 2 },
+  { key: 'week',  label: 'Ultime settimane',    months: 0.5 },
+  { key: 'day',   label: 'Giorno del matrimonio', months: 0 },
+  { key: 'after', label: 'Dopo le nozze',       months: -1 },
+];
+const PLANNING_CATEGORIES = ['Essenziali','Pianificazione','Pratiche burocratiche','Cerimonia','Banchetto','Catering','Musica','Partecipazioni','Bomboniere','Fiori e decorazioni','Fotografia e video','Trasporti','Gioielleria','Sposa e accessori','Sposo e accessori','Bellezza e benessere','Luna di miele','Lista nozze','Altro'];
+
+let planFilterTime = null;   // timeframe key | '__none' | null
+let planFilterCat = null;    // category | null
+
+function timeframeDateLabel(tfKey) {
+  const tf = PLANNING_TIMEFRAMES.find(x => x.key === tfKey);
+  if (!tf || tf.months === null || !state.couple || !state.couple.date) return '';
+  const wd = new Date(state.couple.date);
+  if (isNaN(wd)) return '';
+  if (tf.key === 'after') return 'Dopo il matrimonio';
+  if (tf.key === 'day') {
+    return wd.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+  const d = new Date(wd);
+  d.setMonth(d.getMonth() - Math.round(tf.months));
+  const m = d.toLocaleDateString('it-IT', { month: 'long' });
+  return `Entro ${m.charAt(0).toUpperCase() + m.slice(1)} ${d.getFullYear()}`;
+}
+
 function renderPlanning() {
-  const allTasks = state.tasks;
-  const openTasks = allTasks.filter(t => !t.done);
-  const closedTasks = allTasks.filter(t => t.done);
+  const allTasks = state.tasks || [];
+  const total = allTasks.length;
+  const doneCount = allTasks.filter(t => t.done).length;
+  const openCount = total - doneCount;
+  const pct = total ? Math.round((doneCount / total) * 100) : 0;
 
-  // Apply current filter
-  let items;
-  if (planningFilter === 'open') items = [...openTasks];
-  else if (planningFilter === 'closed') items = [...closedTasks];
-  else items = [...allTasks];
-
-  items.sort((a,b) => {
-    if (a.done !== b.done) return a.done ? 1 : -1;
-    return (a.deadline || '9999').localeCompare(b.deadline || '9999');
+  // Conteggi barra laterale
+  const timeCounts = {}; PLANNING_TIMEFRAMES.forEach(tf => timeCounts[tf.key] = 0);
+  let noTimeCount = 0;
+  const catCounts = {};
+  allTasks.forEach(t => {
+    if (t.timeframe && timeCounts[t.timeframe] !== undefined) timeCounts[t.timeframe]++; else noTimeCount++;
+    const c = t.category || 'Senza categoria';
+    catCounts[c] = (catCounts[c] || 0) + 1;
   });
 
-  // Summary always uses ACTIVE tasks (open ones)
-  const totalPlanned = openTasks.reduce((s,t) => s + (Number(t.totalPrice) || 0), 0);
-  const totalPaid = openTasks.reduce((s,t) => s + taskPaid(t), 0);
-  const totalRemaining = Math.max(0, totalPlanned - totalPaid);
+  // Filtri
+  let filtered = allTasks.filter(t => {
+    if (planningFilter === 'open' && t.done) return false;
+    if (planningFilter === 'closed' && !t.done) return false;
+    if (planFilterTime === '__none' && t.timeframe) return false;
+    if (planFilterTime && planFilterTime !== '__none' && (t.timeframe || '') !== planFilterTime) return false;
+    if (planFilterCat && (t.category || 'Senza categoria') !== planFilterCat) return false;
+    return true;
+  });
 
-  const summary = openTasks.length > 0 && totalPlanned > 0 ? `
-    <div class="planning-summary">
-      <div class="ps-item">
-        <div class="ps-label planning">Totale Pianificazione</div>
-        <div class="ps-value planning">€ ${formatMoney(totalPlanned)}</div>
-      </div>
-      <div class="ps-divider"></div>
-      <div class="ps-item">
-        <div class="ps-label paid">Acconti Versati</div>
-        <div class="ps-value paid">€ ${formatMoney(totalPaid)}</div>
-        <div class="ps-trend">${Math.round((totalPaid/totalPlanned)*100)}% completato</div>
-      </div>
-      <div class="ps-divider"></div>
-      <div class="ps-item">
-        <div class="ps-label remaining">Saldo Da Pagare</div>
-        <div class="ps-value remaining">€ ${formatMoney(totalRemaining)}</div>
-      </div>
-    </div>
-  ` : '';
-
-  const filterBar = allTasks.length > 0 ? `
-    <div class="task-filter">
-      <button class="filter-chip ${planningFilter === 'all' ? 'active' : ''}" onclick="setPlanningFilter('all')">
-        Tutte <span class="count">${allTasks.length}</span>
-      </button>
-      <button class="filter-chip ${planningFilter === 'open' ? 'active' : ''}" onclick="setPlanningFilter('open')">
-        Aperte <span class="count">${openTasks.length}</span>
-      </button>
-      <button class="filter-chip ${planningFilter === 'closed' ? 'active' : ''}" onclick="setPlanningFilter('closed')">
-        Chiuse <span class="count">${closedTasks.length}</span>
-      </button>
-    </div>
-  ` : '';
-
-  let bodyHtml = '';
-  if (allTasks.length === 0) {
-    bodyHtml = `
-      <div class="empty-state">
-        <div class="icon-big">✓</div>
-        <h3>Nessuna attività pianificata</h3>
-        <p>Aggiungi la prima attività per iniziare la pianificazione.</p>
-        <button class="btn btn-primary" onclick="taskModal()">+ Aggiungi attività</button>
-      </div>
-    `;
-  } else if (items.length === 0) {
-    const emptyMsg = planningFilter === 'open'
-      ? { title: 'Tutto saldato!', desc: 'Non ci sono attività aperte. Ottimo lavoro 🎉' }
-      : { title: 'Nessuna attività chiusa', desc: 'Le attività completate appariranno qui.' };
-    bodyHtml = `
-      <div class="empty-state">
-        <div class="icon-big">✓</div>
-        <h3>${emptyMsg.title}</h3>
-        <p>${emptyMsg.desc}</p>
-      </div>
-    `;
-  } else {
-    bodyHtml = items.map(renderTaskRow).join('');
+  // Raggruppa per arco temporale
+  let groupsHtml = '';
+  PLANNING_TIMEFRAMES.forEach(tf => {
+    const inGroup = filtered.filter(t => t.timeframe === tf.key);
+    if (!inGroup.length) return;
+    inGroup.sort((a, b) => (b.essential ? 1 : 0) - (a.essential ? 1 : 0));
+    const dateLab = timeframeDateLabel(tf.key);
+    groupsHtml += `
+      <div class="plan-group">
+        <div class="plan-group-head">
+          <div class="plan-group-title">${tf.label}</div>
+          ${dateLab ? `<div class="plan-group-date">${dateLab}</div>` : ''}
+        </div>
+        <div class="plan-group-list">${inGroup.map(renderImpegnoRow).join('')}</div>
+      </div>`;
+  });
+  const noTime = filtered.filter(t => !t.timeframe);
+  if (noTime.length) {
+    groupsHtml += `
+      <div class="plan-group">
+        <div class="plan-group-head"><div class="plan-group-title">Senza periodo</div></div>
+        <div class="plan-group-list">${noTime.map(renderImpegnoRow).join('')}</div>
+      </div>`;
   }
+  if (!groupsHtml) {
+    groupsHtml = total === 0
+      ? `<div class="empty-state"><div class="icon-big">✓</div><h3>Nessun impegno ancora</h3><p>Scrivi qui sopra il tuo primo impegno e premi invio.</p></div>`
+      : `<div class="empty-state"><div class="icon-big">✓</div><h3>Nessun impegno con questi filtri</h3><p>Prova a rimuovere qualche filtro a sinistra.</p></div>`;
+  }
+
+  // Chip filtri attivi
+  const activeChips = [];
+  if (planningFilter === 'open') activeChips.push(`<div class="plan-fchip">In attesa <button onclick="setPlanStatus('open')" title="Rimuovi">✕</button></div>`);
+  if (planningFilter === 'closed') activeChips.push(`<div class="plan-fchip">Completati <button onclick="setPlanStatus('closed')" title="Rimuovi">✕</button></div>`);
+  if (planFilterTime) {
+    const lab = planFilterTime === '__none' ? 'Senza periodo' : (PLANNING_TIMEFRAMES.find(x => x.key === planFilterTime) || {}).label;
+    activeChips.push(`<div class="plan-fchip">${esc(lab || '')} <button onclick="setPlanTime('${planFilterTime}')" title="Rimuovi">✕</button></div>`);
+  }
+  if (planFilterCat) activeChips.push(`<div class="plan-fchip">${esc(planFilterCat)} <button onclick="setPlanCat('${esc(planFilterCat)}')" title="Rimuovi">✕</button></div>`);
+
+  // Riepilogo pagamenti compatto (solo attività aperte)
+  const openTasks = allTasks.filter(t => !t.done);
+  const totalPlanned = openTasks.reduce((s, t) => s + (Number(t.totalPrice) || 0), 0);
+  const totalPaid = openTasks.reduce((s, t) => s + taskPaid(t), 0);
+  const totalRemaining = Math.max(0, totalPlanned - totalPaid);
+  const budgetMini = totalPlanned > 0 ? `
+    <div class="plan-side-sec">
+      <div class="plan-side-title">Budget pianificazione</div>
+      <div class="plan-budget-mini">
+        <div class="pbm-row"><span class="lab">Pianificato</span><span class="val">€ ${formatMoney(totalPlanned)}</span></div>
+        <div class="pbm-row"><span class="lab">Acconti versati</span><span class="val">€ ${formatMoney(totalPaid)}</span></div>
+        <div class="pbm-row rem"><span class="lab">Saldo da pagare</span><span class="val">€ ${formatMoney(totalRemaining)}</span></div>
+      </div>
+    </div>` : '';
+
+  // Categorie ordinate (prima quelle note, poi extra), solo con conteggio
+  const catOrder = PLANNING_CATEGORIES.filter(c => catCounts[c]);
+  Object.keys(catCounts).forEach(c => { if (!catOrder.includes(c)) catOrder.push(c); });
 
   return `
     <div class="page-header">
-      <div>
-        <h1><em>Pianificazione</em></h1>
-      </div>
-      <button class="btn btn-primary" onclick="taskModal()">+ Nuova attività</button>
+      <div><h1><em>Pianificazione</em></h1></div>
+      <button class="btn btn-primary" onclick="taskModal()">+ Nuovo impegno</button>
     </div>
 
-    ${summary}
-    ${filterBar}
-    ${bodyHtml}
+    <div class="plan-progress">
+      <div class="plan-progress-text">Hai completato <strong>${doneCount}</strong> su <strong>${total}</strong> impegni</div>
+      <div class="plan-progress-bar"><div class="plan-progress-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="plan-layout">
+      <aside class="plan-sidebar">
+        ${activeChips.length ? `<div class="plan-side-sec"><div class="plan-side-title">La tua ricerca</div><div class="plan-active-filters">${activeChips.join('')}</div></div>` : ''}
+
+        <div class="plan-side-sec">
+          <div class="plan-side-title">Per stato</div>
+          <div class="plan-side-item ${planningFilter === 'open' ? 'active' : ''}" onclick="setPlanStatus('open')"><span class="pdot pending"></span> In attesa <span class="ps-count">${openCount}</span></div>
+          <div class="plan-side-item ${planningFilter === 'closed' ? 'active' : ''}" onclick="setPlanStatus('closed')"><span class="pdot done"></span> Completati <span class="ps-count">${doneCount}</span></div>
+        </div>
+
+        <div class="plan-side-sec">
+          <div class="plan-side-title">Per arco temporale</div>
+          ${PLANNING_TIMEFRAMES.map(tf => timeCounts[tf.key] ? `<div class="plan-side-item ${planFilterTime === tf.key ? 'active' : ''}" onclick="setPlanTime('${tf.key}')">${tf.label} <span class="ps-count">${timeCounts[tf.key]}</span></div>` : '').join('')}
+          ${noTimeCount ? `<div class="plan-side-item ${planFilterTime === '__none' ? 'active' : ''}" onclick="setPlanTime('__none')">Senza periodo <span class="ps-count">${noTimeCount}</span></div>` : ''}
+        </div>
+
+        <div class="plan-side-sec">
+          <div class="plan-side-title">Per categoria</div>
+          ${catOrder.length ? catOrder.map(c => `<div class="plan-side-item ${planFilterCat === c ? 'active' : ''}" onclick="setPlanCat('${esc(c)}')">${esc(c)} <span class="ps-count">${catCounts[c]}</span></div>`).join('') : '<div style="font-size:12px;color:var(--ink-muted);padding:4px 10px">Nessuna ancora</div>'}
+        </div>
+
+        ${budgetMini}
+      </aside>
+
+      <div class="plan-main">
+        <div class="plan-quickadd">
+          <button class="pq-plus" onclick="quickAddTask()">+</button>
+          <input id="plan-quick-input" type="text" placeholder="Crea un nuovo impegno..." onkeydown="if(event.key==='Enter'){event.preventDefault();quickAddTask();}">
+        </div>
+        ${groupsHtml}
+      </div>
+    </div>
   `;
+}
+
+function renderImpegnoRow(t) {
+  const total = Number(t.totalPrice || 0);
+  return `
+    <div class="impegno-row ${t.done ? 'done' : ''}" data-task-id="${t.id}">
+      <div class="impegno-check ${t.done ? 'checked' : ''}" onclick="toggleTask('${t.id}')">
+        ${t.done ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+      </div>
+      <div class="impegno-body" onclick="taskModal('${t.id}')">
+        <div class="impegno-title">${esc(t.title)}</div>
+        <div class="impegno-tags">
+          ${t.essential ? '<span class="imp-tag essential">Essenziale</span>' : ''}
+          ${t.category ? `<span class="imp-tag cat">${esc(t.category)}</span>` : ''}
+          ${total > 0 ? `<span class="imp-amount">💶 € ${formatMoney(total)}</span>` : ''}
+        </div>
+      </div>
+      <button class="impegno-del" title="Elimina" onclick="deleteTask('${t.id}')">✕</button>
+    </div>
+  `;
+}
+
+function setPlanStatus(s) { planningFilter = (planningFilter === s ? 'all' : s); render(); }
+function setPlanTime(k) { planFilterTime = (planFilterTime === k ? null : k); render(); }
+function setPlanCat(c) { planFilterCat = (planFilterCat === c ? null : c); render(); }
+
+function quickAddTask() {
+  const inp = document.getElementById('plan-quick-input');
+  const title = inp ? inp.value.trim() : '';
+  if (!title) { if (inp) inp.focus(); return; }
+  state.tasks.push({ id: uid(), title, category: '', timeframe: '', essential: false, deadline: '', totalPrice: '', payments: [], notes: '', done: false });
+  saveData();
+  render();
+  setTimeout(() => { const i = document.getElementById('plan-quick-input'); if (i) i.focus(); }, 30);
 }
 
 function setPlanningFilter(f) {
@@ -6896,9 +7062,24 @@ function taskModal(id) {
     </div>
     <div class="form-row two">
       <div class="field"><label>Categoria</label>
-        <input id="t-category" type="text" value="${esc(t.category)}">
+        <select id="t-category" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;background:var(--bg)">
+          <option value="">—</option>
+          ${PLANNING_CATEGORIES.map(c => `<option value="${esc(c)}" ${t.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+          ${t.category && !PLANNING_CATEGORIES.includes(t.category) ? `<option value="${esc(t.category)}" selected>${esc(t.category)}</option>` : ''}
+        </select>
       </div>
+      <div class="field"><label>Arco temporale</label>
+        <select id="t-timeframe" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;background:var(--bg)">
+          <option value="">—</option>
+          ${PLANNING_TIMEFRAMES.map(tf => `<option value="${tf.key}" ${t.timeframe === tf.key ? 'selected' : ''}>${tf.label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-row two">
       <div class="field"><label>Scadenza</label><input id="t-deadline" type="date" value="${esc(t.deadline)}"></div>
+      <div class="field"><label>Priorità</label>
+        <label class="essential-toggle"><input type="checkbox" id="t-essential" ${t.essential ? 'checked' : ''}> Essenziale</label>
+      </div>
     </div>
     <div class="field" style="margin-bottom:14px">
       <label>Prezzo totale (€)</label>
@@ -6989,7 +7170,9 @@ function saveTask(id, isNew) {
   const data = {
     id,
     title: document.getElementById('t-title').value.trim(),
-    category: document.getElementById('t-category').value.trim(),
+    category: document.getElementById('t-category').value,
+    timeframe: document.getElementById('t-timeframe').value,
+    essential: document.getElementById('t-essential').checked,
     deadline: document.getElementById('t-deadline').value,
     totalPrice,
     payments,
