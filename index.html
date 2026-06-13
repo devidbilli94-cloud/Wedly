@@ -7233,6 +7233,7 @@ function renderQuoteDetailCard(r, cheapest, hasMultiple, isCouple) {
           <div class="qdc-box qdc-box-vendor">
             <div class="qdc-label">Fornitore</div>
             <div class="qdc-title">${esc(r.title)}</div>
+            ${!isCouple && r.attachment ? `<button class="btn btn-ghost btn-sm qdc-attach-btn" onclick="openAttachment('${r.attachment.id}')">📎 Apri preventivo</button>` : ''}
             ${r.chosen || (isCheapest && !r.chosen) ? `
               <div class="qdc-badges">
                 ${r.chosen ? '<span class="qr-badge chosen-badge">⭐ Scelto</span>' : ''}
@@ -7247,7 +7248,6 @@ function renderQuoteDetailCard(r, cheapest, hasMultiple, isCouple) {
         </div>
         <div class="qdc-right">
           <div class="qdc-amount">€ ${formatMoney(r.amount || 0)}</div>
-          ${!isCouple && r.attachment ? `<button class="btn btn-ghost btn-sm qdc-attach-btn" onclick="openAttachment('${r.attachment.id}')">📎 Apri preventivo</button>` : ''}
           ${!isCouple ? `
             <div class="qdc-actions">
               <button class="qr-icon-btn" onclick="toggleChosen('${r.id}');closeModal();setTimeout(()=>{const k=state.sharedRows.find(x=>x.id==='${r.id}')?.category?.replace(/[^a-zA-Z0-9_]/g,'_');if(k)openCategoryDetail(k);},80)" title="${r.chosen ? 'Rimuovi scelta' : 'Segna come scelto'}">${r.chosen ? '★' : '☆'}</button>
