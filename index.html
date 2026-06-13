@@ -1541,12 +1541,22 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
   overflow: hidden;
 }
 .kpi.featured {
-  background: var(--ink);
+  background: linear-gradient(135deg, #2d4329 0%, #4a6e45 100%);
   color: #f6f0e7;
-  border-color: var(--ink);
+  border: 1.5px solid var(--gold);
+  box-shadow: 0 0 0 1px rgba(184, 156, 90, 0.35), 0 10px 24px rgba(20, 30, 18, 0.18);
 }
-.kpi.featured .label { color: rgba(246, 240, 231, 0.65); }
-.kpi.featured .value { color: #f6f0e7; }
+.kpi.featured::before {
+  content: '';
+  position: absolute;
+  right: -40px; top: -40px;
+  width: 150px; height: 150px;
+  background: radial-gradient(circle, rgba(184, 156, 90, 0.20), transparent 65%);
+  pointer-events: none;
+}
+.kpi.featured .label { color: rgba(246, 240, 231, 0.7); }
+.kpi.featured .value { color: var(--gold); }
+.kpi.featured .value .currency { color: var(--gold); opacity: 0.85; }
 .kpi .label {
   font-size: 12px;
   text-transform: capitalize;
