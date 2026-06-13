@@ -3930,6 +3930,29 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .impegno-del:hover { color:var(--burgundy); background:rgba(122,46,59,0.08); }
 .essential-toggle { display:inline-flex; align-items:center; gap:8px; font-size:14px; color:var(--ink); cursor:pointer; padding:9px 0; }
 .essential-toggle input { width:18px; height:18px; accent-color:var(--terracotta); }
+
+/* ===== RECENSIONI ===== */
+.rev-overview { display:flex; align-items:center; gap:24px; background:linear-gradient(135deg,#2d4329 0%,#4a6e45 100%); color:#f6f0e7; border:1.5px solid var(--gold); box-shadow:0 0 0 1px rgba(184,156,90,0.35); border-radius:var(--radius); padding:24px 28px; margin-bottom:24px; flex-wrap:wrap; }
+.rev-overview .rev-avg { text-align:center; }
+.rev-overview .rev-avg-num { font-family:'Pinyon Script','Cormorant Garamond',cursive; font-size:58px; line-height:1; color:var(--gold); }
+.rev-overview .rev-avg-stars { font-size:16px; letter-spacing:2px; margin-top:4px; }
+.rev-overview .rev-avg-count { font-size:12px; color:rgba(246,240,231,0.7); margin-top:6px; text-transform:uppercase; letter-spacing:0.1em; }
+.rev-overview .rev-ov-divider { width:1px; align-self:stretch; background:rgba(184,156,90,0.3); }
+.rev-overview .rev-ov-text { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:20px; color:#f6f0e7; line-height:1.4; flex:1; min-width:200px; }
+.rev-stars-gold { color:var(--gold); }
+.rev-stars-empty { color:rgba(184,156,90,0.35); }
+
+.rev-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px; }
+.rev-card { background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius); padding:20px 22px; position:relative; overflow:hidden; }
+.rev-card::before { content:'\201C'; position:absolute; top:2px; right:18px; font-family:'Cormorant Garamond',serif; font-size:70px; color:var(--line); line-height:1; }
+.rev-card .rev-stars { font-size:15px; letter-spacing:2px; margin-bottom:12px; }
+.rev-card .rev-text { font-family:'Cormorant Garamond',serif; font-size:17px; font-style:italic; color:var(--ink); line-height:1.5; margin-bottom:16px; position:relative; z-index:1; }
+.rev-card .rev-foot { display:flex; align-items:baseline; justify-content:space-between; gap:10px; border-top:1px solid var(--line); padding-top:12px; }
+.rev-card .rev-author { font-family:'Pinyon Script',cursive; font-size:24px; color:var(--terracotta); }
+.rev-card .rev-date { font-size:12px; color:var(--ink-muted); }
+.rev-card.pending { background:var(--bg); border-style:dashed; }
+.rev-card.pending .rev-pending-msg { color:var(--ink-muted); font-size:14px; font-style:italic; font-family:'Cormorant Garamond',serif; }
+.rev-section-label { font-size:11px; text-transform:uppercase; letter-spacing:0.13em; color:var(--ink-muted); font-weight:700; margin:8px 0 14px; }
 </style>
 </head>
 <body>
@@ -4109,6 +4132,10 @@ table.guest-table tr:last-child td { border-bottom:none; }
       <button class="nav-item" data-view="budget" onclick="navigateTo('budget')">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>
         Budget
+      </button>
+      <button class="nav-item" data-view="reviews" onclick="navigateTo('reviews')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 3.5l2.3 4.9 5.2.7-3.8 3.6 1 5.2-4.7-2.6-4.7 2.6 1-5.2L4.2 9.1l5.2-.7z"/></svg>
+        Recensioni
       </button>
     </nav>
 
@@ -5217,6 +5244,7 @@ function render() {
     case 'shared': main.innerHTML = renderShared(); break;
     case 'vendors': main.innerHTML = renderVendors(); break;
     case 'budget': main.innerHTML = renderBudget(); break;
+    case 'reviews': main.innerHTML = renderReviews(); break;
     default: main.innerHTML = renderReminders();
   }
   updateUrgentBadge();
@@ -5762,6 +5790,79 @@ function confirmVendorAdd() {
   closeModal();
   render();
   toast('Fornitore aggiunto');
+}
+
+function starHtml(rating, max = 5) {
+  let s = '';
+  for (let i = 1; i <= max; i++) s += `<span class="${i <= rating ? 'rev-stars-gold' : 'rev-stars-empty'}">★</span>`;
+  return s;
+}
+
+function renderReviews() {
+  const projects = (typeof store !== 'undefined' && store.projects) ? store.projects : [state].filter(Boolean);
+  const withReview = projects.filter(p => p && p.review && p.review.rating);
+  const pending = projects.filter(p => p && p.couple && (!p.review || !p.review.rating));
+  const count = withReview.length;
+  const avg = count ? (withReview.reduce((s, p) => s + p.review.rating, 0) / count) : 0;
+
+  const overview = count ? `
+    <div class="rev-overview">
+      <div class="rev-avg">
+        <div class="rev-avg-num">${avg.toFixed(1)}</div>
+        <div class="rev-avg-stars">${starHtml(Math.round(avg))}</div>
+        <div class="rev-avg-count">${count} ${count === 1 ? 'recensione' : 'recensioni'}</div>
+      </div>
+      <div class="rev-ov-divider"></div>
+      <div class="rev-ov-text">${avg >= 4.5 ? 'I tuoi sposi ti adorano ✨' : avg >= 3.5 ? 'Ottimi riscontri dai tuoi sposi' : 'I giudizi lasciati dai tuoi sposi'}</div>
+    </div>` : '';
+
+  const cards = withReview
+    .slice()
+    .sort((a, b) => (b.review.ts || 0) - (a.review.ts || 0))
+    .map(p => {
+      const coupleName = [p.couple?.bride, p.couple?.groom].filter(Boolean).join(' & ');
+      const author = p.review.author || coupleName || 'Sposi';
+      return `
+      <div class="rev-card">
+        <div class="rev-stars">${starHtml(p.review.rating)}</div>
+        ${p.review.text
+          ? `<div class="rev-text">${esc(p.review.text)}</div>`
+          : `<div class="rev-text" style="color:var(--ink-muted)">(nessun commento lasciato)</div>`}
+        <div class="rev-foot">
+          <div class="rev-author">${esc(author)}</div>
+          <div class="rev-date">${esc(p.review.date || '')}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+  const pendingBlock = pending.length ? `
+    <div class="rev-section-label">In attesa di recensione (${pending.length})</div>
+    <div class="rev-grid">
+      ${pending.map(p => {
+        const coupleName = [p.couple?.bride, p.couple?.groom].filter(Boolean).join(' & ') || 'Sposi';
+        return `
+        <div class="rev-card pending">
+          <div class="rev-author" style="margin-bottom:8px">${esc(coupleName)}</div>
+          <div class="rev-pending-msg">Non ha ancora lasciato una recensione.</div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  let body;
+  if (count === 0 && pending.length === 0) {
+    body = `<div class="empty-state"><div class="icon-big">★</div><h3>Nessuna recensione ancora</h3><p>Le recensioni lasciate dagli sposi dal loro portale appariranno qui.</p></div>`;
+  } else {
+    body = `
+      ${overview}
+      ${count ? `<div class="rev-grid">${cards}</div>` : '<p style="color:var(--ink-muted);font-style:italic">Ancora nessuna recensione ricevuta. Quando gli sposi ne lasceranno una dal loro portale, comparirà qui.</p>'}
+      ${pendingBlock}
+    `;
+  }
+
+  return `
+    <div class="page-header"><div><h1><em>Recensioni</em></h1></div></div>
+    ${body}
+  `;
 }
 let _floatingDragOffset = { x: 0, y: 0 };
 let _floatingDragging = false;
