@@ -3806,6 +3806,13 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .side-field input, .side-field select { width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-family:inherit; font-size:14px; background:var(--bg); color:var(--ink); }
 .seat-assign-list { display:flex; flex-direction:column; gap:6px; max-height:200px; overflow-y:auto; }
 .seat-assign-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:13px; padding:6px 8px; border:1px solid var(--line); border-radius:8px; }
+
+/* ===== ALLEGATI PREVENTIVO ===== */
+.attach-chip { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:8px 12px; }
+.attach-name { font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px; word-break:break-all; }
+.attach-x { background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:6px; line-height:1; margin-left:auto; }
+.attach-x:hover { color:var(--burgundy); background:rgba(122,46,59,0.08); }
+.qdc-attach-btn { margin-top:8px; white-space:nowrap; }
 </style>
 </head>
 <body>
@@ -7240,6 +7247,7 @@ function renderQuoteDetailCard(r, cheapest, hasMultiple, isCouple) {
         </div>
         <div class="qdc-right">
           <div class="qdc-amount">€ ${formatMoney(r.amount || 0)}</div>
+          ${!isCouple && r.attachment ? `<button class="btn btn-ghost btn-sm qdc-attach-btn" onclick="openAttachment('${r.attachment.id}')">📎 Apri preventivo</button>` : ''}
           ${!isCouple ? `
             <div class="qdc-actions">
               <button class="qr-icon-btn" onclick="toggleChosen('${r.id}');closeModal();setTimeout(()=>{const k=state.sharedRows.find(x=>x.id==='${r.id}')?.category?.replace(/[^a-zA-Z0-9_]/g,'_');if(k)openCategoryDetail(k);},80)" title="${r.chosen ? 'Rimuovi scelta' : 'Segna come scelto'}">${r.chosen ? '★' : '☆'}</button>
@@ -7469,6 +7477,8 @@ function renderSharedRow(r) {
 
 function sharedRowModal(id) {
   const r = id ? state.sharedRows.find(x => x.id === id) : { id: uid(), title: '', description: '', amount: '', category: '', chosen: false, comments: [] };
+  _pendingAttachment = null;
+  _attachmentRemoved = false;
 
   // Suggest existing categories already used in this project
   const usedCategories = [...new Set(state.sharedRows.filter(x => x.category).map(x => x.category))];
@@ -7506,6 +7516,11 @@ function sharedRowModal(id) {
       </div>
     </div>
     <div class="field" style="margin-bottom:14px"><label>Dettaglio Servizio</label><textarea id="s-description" rows="3">${esc(r.description)}</textarea></div>
+    <div class="field" style="margin-bottom:14px">
+      <label>Preventivo allegato <span style="font-weight:400;color:var(--ink-muted);text-transform:none;letter-spacing:0">(PDF o foto, max 10 MB)</span></label>
+      <div id="s-attach-area">${attachmentAreaHTML(r)}</div>
+      <input id="s-attach-file" type="file" accept="application/pdf,image/*" data-row="${r.id}" style="display:none" onchange="loadQuoteAttachment(event)">
+    </div>
     ${id ? `<div class="field" style="margin-bottom:14px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="s-chosen" type="checkbox" ${r.chosen ? 'checked' : ''} style="width:auto;margin:0">Segna come opzione scelta</label></div>` : ''}
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
@@ -7514,7 +7529,7 @@ function sharedRowModal(id) {
   `);
 }
 
-function saveSharedRow(id, isNew) {
+async function saveSharedRow(id, isNew) {
   const title = document.getElementById('s-title').value.trim();
   const description = document.getElementById('s-description').value.trim();
   const category = document.getElementById('s-category').value.trim();
@@ -7523,16 +7538,149 @@ function saveSharedRow(id, isNew) {
   const chosenEl = document.getElementById('s-chosen');
   const chosen = chosenEl ? chosenEl.checked : false;
   if (!title) { toast('Inserisci il titolo'); return; }
+
+  let row;
   if (isNew) {
-    state.sharedRows.push({ id, title, description, category, amount, chosen, comments: [] });
+    row = { id, title, description, category, amount, chosen, comments: [] };
+    state.sharedRows.push(row);
   } else {
-    const r = state.sharedRows.find(x => x.id === id);
-    if (r) { r.title = title; r.description = description; r.category = category; r.amount = amount; r.chosen = chosen; }
+    row = state.sharedRows.find(x => x.id === id);
+    if (row) { row.title = title; row.description = description; row.category = category; row.amount = amount; row.chosen = chosen; }
   }
+
+  // Gestione allegato (caricato separatamente sul Worker)
+  if (row) {
+    try {
+      if (_attachmentRemoved && row.attachment) {
+        const oldId = row.attachment.id;
+        row.attachment = null;
+        cloudFetch('/attachment/' + oldId, { method: 'DELETE' }).catch(() => {});
+      }
+      if (_pendingAttachment) {
+        if (row.attachment && row.attachment.id) {
+          cloudFetch('/attachment/' + row.attachment.id, { method: 'DELETE' }).catch(() => {});
+        }
+        const aid = uid();
+        toast('Caricamento allegato…');
+        await cloudFetch('/attachment/' + aid, { method: 'PUT', body: {
+          name: _pendingAttachment.name, type: _pendingAttachment.type, data: _pendingAttachment.data
+        }});
+        row.attachment = { id: aid, name: _pendingAttachment.name, type: _pendingAttachment.type };
+      }
+    } catch (err) {
+      toast('Errore nel caricamento dell\'allegato');
+    }
+  }
+  _pendingAttachment = null;
+  _attachmentRemoved = false;
+
   saveData();
   closeModal();
   render();
   toast('Salvato');
+}
+
+// ===== Allegati preventivo =====
+let _pendingAttachment = null;   // { name, type, data } pronto da caricare
+let _attachmentRemoved = false;
+
+function attachmentAreaHTML(r) {
+  if (_pendingAttachment) {
+    return `<div class="attach-chip"><span class="attach-name">📎 ${esc(_pendingAttachment.name)} <em style="color:var(--olive)">pronto</em></span>
+      <button type="button" class="attach-x" title="Annulla" onclick="clearPendingAttachment('${r.id}')">✕</button></div>`;
+  }
+  if (r.attachment && !_attachmentRemoved) {
+    return `<div class="attach-chip"><span class="attach-name">📎 ${esc(r.attachment.name)}</span>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('s-attach-file').click()">Sostituisci</button>
+      <button type="button" class="attach-x" title="Rimuovi" onclick="markAttachmentRemoved('${r.id}')">✕</button></div>`;
+  }
+  return `<button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('s-attach-file').click()">+ Scegli file</button>`;
+}
+
+function refreshAttachArea(rowId) {
+  const r = state.sharedRows.find(x => x.id === rowId) || { id: rowId };
+  const area = document.getElementById('s-attach-area');
+  if (area) area.innerHTML = attachmentAreaHTML(r);
+}
+
+function loadQuoteAttachment(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  const rowId = e.target.dataset.row || '';
+  if (f.size > 10 * 1024 * 1024) { toast('File troppo grande (max 10 MB)'); e.target.value = ''; return; }
+
+  const finish = (dataUrl) => {
+    _pendingAttachment = { name: f.name, type: f.type || 'application/octet-stream', data: dataUrl };
+    _attachmentRemoved = false;
+    refreshAttachArea(rowId);
+  };
+  const reader = new FileReader();
+  if ((f.type || '').startsWith('image/')) {
+    // comprime le foto per non occupare troppo spazio
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1600;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          const ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio); h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        finish(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => finish(ev.target.result);
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(f);
+  } else {
+    reader.onload = ev => finish(ev.target.result);
+    reader.readAsDataURL(f);
+  }
+}
+
+function clearPendingAttachment(rowId) {
+  _pendingAttachment = null;
+  const inp = document.getElementById('s-attach-file');
+  if (inp) inp.value = '';
+  refreshAttachArea(rowId);
+}
+
+function markAttachmentRemoved(rowId) {
+  _attachmentRemoved = true;
+  _pendingAttachment = null;
+  refreshAttachArea(rowId);
+}
+
+async function openAttachment(id) {
+  if (!cloudCfg) { toast('Non connesso'); return; }
+  const win = window.open('', '_blank');   // apri subito, nel gesto del clic
+  try {
+    const data = await cloudFetch('/attachment/' + id);
+    if (!data || !data.data) { if (win) win.close(); toast('Allegato non trovato'); return; }
+    const blob = dataURLToBlob(data.data);
+    const url = URL.createObjectURL(blob);
+    if (win) {
+      win.location = url;
+    } else {
+      const a = document.createElement('a'); a.href = url; a.download = data.name || 'preventivo'; a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  } catch (e) {
+    if (win) win.close();
+    toast('Impossibile aprire l\'allegato');
+  }
+}
+
+function dataURLToBlob(dataUrl) {
+  const parts = dataUrl.split(',');
+  const mime = (parts[0].match(/data:(.*?);base64/) || [])[1] || 'application/octet-stream';
+  const bin = atob(parts[1]);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
 }
 
 function toggleChosen(id) {
@@ -7559,6 +7707,9 @@ function deleteSharedRow(id) {
     confirmText: 'Elimina',
     danger: true,
     onConfirm: () => {
+      if (r.attachment && r.attachment.id) {
+        cloudFetch('/attachment/' + r.attachment.id, { method: 'DELETE' }).catch(() => {});
+      }
       state.sharedRows = state.sharedRows.filter(x => x.id !== id);
       saveData();
       render();
