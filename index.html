@@ -3813,6 +3813,9 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .attach-x { background:none; border:none; color:var(--ink-muted); cursor:pointer; font-size:14px; padding:2px 6px; border-radius:6px; line-height:1; margin-left:auto; }
 .attach-x:hover { color:var(--burgundy); background:rgba(122,46,59,0.08); }
 .qdc-attach-btn { margin-top:8px; white-space:nowrap; }
+.qr-vendor-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.qr-attach-btn { background:none; border:1px solid var(--line); border-radius:7px; cursor:pointer; font-size:13px; padding:1px 8px; line-height:1.5; color:var(--ink); transition:all .15s; }
+.qr-attach-btn:hover { border-color:var(--terracotta); background:rgba(94,130,94,0.08); }
 </style>
 </head>
 <body>
@@ -7135,6 +7138,7 @@ function renderQuotesSummaryTable(categories, isCouple) {
 function renderCategorySummaryRow(cat, isCouple) {
   const chosen = cat.rows.find(r => r.chosen);
   const reference = chosen || cat.rows[0];
+  const attachRow = (chosen && chosen.attachment) ? chosen : cat.rows.find(r => r.attachment);
   const totalComments = cat.rows.reduce((s, r) => s + ((r.comments || []).length), 0);
   const max = Math.max(...cat.rows.map(r => r.amount || 0));
   const min = Math.min(...cat.rows.map(r => r.amount || 0));
@@ -7152,7 +7156,10 @@ function renderCategorySummaryRow(cat, isCouple) {
   return `
     <tr class="quote-row category-row ${chosen ? 'has-chosen' : ''}" data-cat="${safeKey}">
       <td class="col-vendor">
-        <div class="qr-vendor">${esc(cat.name)}</div>
+        <div class="qr-vendor-line">
+          <span class="qr-vendor">${esc(cat.name)}</span>
+          ${!isCouple && attachRow ? `<button class="qr-attach-btn" title="Apri preventivo allegato" onclick="event.stopPropagation();openAttachment('${attachRow.attachment.id}')">📎</button>` : ''}
+        </div>
         ${chosen ? `<div class="qr-sub">${esc(chosen.title)}</div>` : (cat.rows.length > 1 ? `<div class="qr-sub">${cat.rows.length} opzioni</div>` : '')}
       </td>
       <td class="col-amount">${amountDisplay}</td>
