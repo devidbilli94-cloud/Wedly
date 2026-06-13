@@ -3826,6 +3826,47 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .qr-vendor-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .qr-attach-btn { background:none; border:1px solid var(--line); border-radius:7px; cursor:pointer; font-size:13px; padding:1px 8px; line-height:1.5; color:var(--ink); transition:all .15s; }
 .qr-attach-btn:hover { border-color:var(--terracotta); background:rgba(94,130,94,0.08); }
+
+/* ===== FORNITORI ===== */
+.vendors-head { margin-bottom:18px; }
+.vendors-progress-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px; }
+.vendors-progress-label { font-size:12px; text-transform:uppercase; letter-spacing:0.12em; color:var(--ink-muted); font-weight:700; white-space:nowrap; }
+.vendors-progress-bar { flex:1; min-width:160px; height:7px; background:var(--line); border-radius:99px; overflow:hidden; }
+.vendors-progress-fill { height:100%; background:linear-gradient(90deg,#4a6e45,var(--gold)); border-radius:99px; transition:width .3s; }
+.vendors-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+.vendor-tab { display:inline-flex; align-items:center; gap:7px; background:var(--bg-card); border:1px solid var(--line); border-radius:99px; padding:8px 16px; cursor:pointer; font-size:14px; color:var(--ink); transition:all .15s; }
+.vendor-tab:hover { border-color:var(--terracotta); }
+.vendor-tab.active { background:var(--terracotta); border-color:var(--terracotta); color:#fff; }
+.vendor-tab .vt-count { font-weight:700; background:rgba(0,0,0,0.06); border-radius:99px; padding:1px 8px; font-size:12px; }
+.vendor-tab.active .vt-count { background:rgba(255,255,255,0.25); }
+.vendor-tab .vt-heart { color:var(--rosé); }
+.vendor-tab.active .vt-heart { color:#fff; }
+.vendor-tab .vt-check { color:var(--olive); }
+.vendor-tab.active .vt-check { color:#fff; }
+
+.vendors-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(210px, 1fr)); gap:16px; }
+.vendor-cat-card { background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius); padding:20px 18px; text-align:center; cursor:pointer; transition:transform .15s, box-shadow .15s, border-color .15s; display:flex; flex-direction:column; align-items:center; }
+.vendor-cat-card:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,0.07); border-color:var(--terracotta); }
+.vendor-cat-card.has-booked { border-color:rgba(13,130,70,0.4); background:linear-gradient(180deg, rgba(64,241,140,0.05), var(--bg-card)); }
+.vc-icon { width:54px; height:54px; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); margin-bottom:12px; }
+.vc-icon svg { width:34px; height:34px; }
+.vendor-cat-card.has-booked .vc-icon { color:var(--olive); }
+.vc-name { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:600; color:var(--ink); margin-bottom:12px; line-height:1.15; }
+.vc-vendors { display:flex; flex-direction:column; gap:5px; width:100%; margin-bottom:12px; }
+.vc-chip { display:flex; align-items:center; gap:6px; justify-content:center; font-size:12.5px; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:5px 8px; }
+.vc-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.vc-dot.saved { background:var(--rosé); }
+.vc-dot.booked { background:var(--olive); }
+.vc-add-btn { margin-top:auto; display:inline-flex; align-items:center; gap:6px; background:var(--bg); border:1px solid var(--line); border-radius:99px; padding:7px 16px; font-size:13px; color:var(--ink-soft); cursor:pointer; transition:all .15s; }
+.vendor-cat-card:hover .vc-add-btn { border-color:var(--terracotta); color:var(--terracotta); }
+
+/* modal gestione categoria fornitori */
+.vmodal-vendor { border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+.vmodal-vendor-top { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.vmodal-status { display:inline-flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.vmodal-status button { border:none; background:var(--bg); padding:6px 12px; font-size:12px; cursor:pointer; color:var(--ink-soft); }
+.vmodal-status button.on-saved { background:var(--rosé); color:#fff; }
+.vmodal-status button.on-booked { background:var(--olive); color:#fff; }
 </style>
 </head>
 <body>
@@ -3974,6 +4015,10 @@ table.guest-table tr:last-child td { border-bottom:none; }
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L7 21l-2-1.5L3 21V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v16z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
         Preventivo
       </button>
+      <button class="nav-item" data-view="vendors" onclick="navigateTo('vendors')">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l1-5h16l1 5"/><path d="M4 9h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9z"/><path d="M9 13h6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg>
+        Fornitori
+      </button>
       <button class="nav-item" data-view="appointments" onclick="navigateTo('appointments')">
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         Appuntamenti
@@ -4064,6 +4109,7 @@ function newProject(bride = '', groom = '', date = '', ceremonyType = '', ceremo
     sharedRows: [],
     guests: [],
     tables: [],
+    vendors: [],
     currentRole: 'planner'
   };
 }
@@ -4206,6 +4252,7 @@ function runMigrations() {
     if (!p.pin) p.pin = generatePin();
     if (!Array.isArray(p.guests)) p.guests = [];
     if (!Array.isArray(p.tables)) p.tables = [];
+    if (!Array.isArray(p.vendors)) p.vendors = [];
     p.tasks?.forEach(t => {
       if (!Array.isArray(t.payments)) {
         t.payments = [];
@@ -5105,6 +5152,7 @@ function render() {
     case 'design': main.innerHTML = renderDesign(); break;
     case 'finances': main.innerHTML = renderFinances(); break;
     case 'shared': main.innerHTML = renderShared(); break;
+    case 'vendors': main.innerHTML = renderVendors(); break;
     case 'budget': main.innerHTML = renderBudget(); break;
     default: main.innerHTML = renderReminders();
   }
@@ -5472,8 +5520,186 @@ function assignSeat(tableId, seatIndex, guestId) {
 }
 
 // ============================================
-// FLOATING URGENT REMINDERS (glass, draggable)
+// FORNITORI (vendor directory by category)
 // ============================================
+const VENDOR_CATEGORIES = [
+  { key: 'banchetto', name: 'Banchetto', icon: '<path d="M3 10l9-7 9 7"/><path d="M5 9v12h14V9"/><path d="M9 21v-7h6v7"/>' },
+  { key: 'catering', name: 'Catering', icon: '<path d="M3 17h18"/><path d="M5 17a7 7 0 0 1 14 0"/><line x1="12" y1="7" x2="12" y2="10"/><circle cx="12" cy="6" r="1"/>' },
+  { key: 'fotografia', name: 'Fotografia', icon: '<path d="M3 7h3l2-3h8l2 3h3v13H3z"/><circle cx="12" cy="13" r="4"/>' },
+  { key: 'video', name: 'Video', icon: '<rect x="2" y="7" width="14" height="11" rx="2"/><path d="M22 8l-6 4 6 4V8z"/>' },
+  { key: 'musica', name: 'Musica', icon: '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><path d="M9 18V5l12-2v11"/>' },
+  { key: 'auto', name: 'Auto matrimonio', icon: '<path d="M5 13l2-5h10l2 5"/><rect x="3" y="13" width="18" height="6" rx="1"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="16.5" cy="19" r="1.5"/>' },
+  { key: 'trasporto', name: 'Trasporto', icon: '<rect x="3" y="5" width="18" height="11" rx="2"/><line x1="3" y1="11" x2="21" y2="11"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="16.5" cy="19" r="1.5"/>' },
+  { key: 'partecipazioni', name: 'Partecipazioni', icon: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/><path d="M12 14.5l1.2 1.2 2.4-2.4"/>' },
+  { key: 'bomboniere', name: 'Bomboniere', icon: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v9h14v-9"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8C12 8 9 3 7 5.5S12 8 12 8z"/><path d="M12 8c0 0 3-5 5-2.5S12 8 12 8z"/>' },
+  { key: 'fiori', name: 'Fiori e decorazioni', icon: '<circle cx="12" cy="9" r="2.5"/><path d="M12 11.5c-2.5 1-4 3-4 5.5h8c0-2.5-1.5-4.5-4-5.5z"/><path d="M9.5 8C8 6.5 8 4.5 9.5 3"/><path d="M14.5 8C16 6.5 16 4.5 14.5 3"/>' },
+  { key: 'animazione', name: 'Animazione', icon: '<path d="M4 4v16"/><path d="M4 4h11l-1.5 3.5L15 11H4"/>' },
+  { key: 'planner', name: 'Wedding Planner', icon: '<rect x="5" y="3" width="14" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><path d="M12.5 8h4M12.5 12h4"/>' },
+  { key: 'torte', name: 'Torte nuziali', icon: '<path d="M4 21h16v-7H4z"/><path d="M5 14v-4h14v4"/><path d="M9 10V8M12 10V8M15 10V8"/><path d="M12 8c.8-.6.8-1.6 0-2.5C11.2 6.4 11.2 7.4 12 8z"/>' },
+  { key: 'sposa', name: 'Sposa e accessori', icon: '<circle cx="12" cy="7" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/><path d="M9 6c1-2 5-2 6 0"/>' },
+  { key: 'sposo', name: 'Sposo e accessori', icon: '<circle cx="12" cy="7" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/><path d="M12 11l-1.5 3h3z"/>' },
+  { key: 'bellezza', name: 'Bellezza e benessere', icon: '<circle cx="10" cy="9" r="5"/><line x1="10" y1="14" x2="10" y2="21"/><line x1="6" y1="21" x2="14" y2="21"/><path d="M10 7v4"/>' },
+  { key: 'gioielleria', name: 'Gioielleria', icon: '<path d="M7 3h10l3 5-8 13L4 8z"/><path d="M4 8h16"/><path d="M9.5 3L12 8l2.5-5"/>' },
+  { key: 'lunamiele', name: 'Luna di miele', icon: '<path d="M3 12l18-7-7 18-2.5-8.5z"/>' },
+  { key: 'altro', name: 'Altro', icon: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="12" r="1" fill="currentColor" stroke="none"/>' },
+];
+
+let vendorFilter = 'all';   // 'all' | 'saved' | 'booked'
+
+function setVendorFilter(f) { vendorFilter = f; render(); }
+
+function renderVendors() {
+  if (!state.vendors) state.vendors = [];
+  const vendors = state.vendors;
+  const byCat = {};
+  VENDOR_CATEGORIES.forEach(c => { byCat[c.key] = []; });
+  vendors.forEach(v => { if (byCat[v.cat]) byCat[v.cat].push(v); else (byCat.altro = byCat.altro || []).push(v); });
+
+  const savedCount = vendors.filter(v => v.status === 'saved').length;
+  const bookedCount = vendors.filter(v => v.status === 'booked').length;
+  const catsBooked = VENDOR_CATEGORIES.filter(c => (byCat[c.key] || []).some(v => v.status === 'booked')).length;
+  const pct = Math.round((catsBooked / VENDOR_CATEGORIES.length) * 100);
+
+  const cards = VENDOR_CATEGORIES.map(c => {
+    let list = byCat[c.key] || [];
+    if (vendorFilter === 'saved') list = list.filter(v => v.status === 'saved');
+    if (vendorFilter === 'booked') list = list.filter(v => v.status === 'booked');
+    if (vendorFilter !== 'all' && list.length === 0) return '';   // nascondi categorie senza match
+    const hasBooked = (byCat[c.key] || []).some(v => v.status === 'booked');
+    const chips = list.map(v => `<div class="vc-chip"><span class="vc-dot ${v.status}"></span>${esc(v.name || 'Senza nome')}</div>`).join('');
+    return `
+      <div class="vendor-cat-card ${hasBooked ? 'has-booked' : ''}" onclick="openVendorCategory('${c.key}')">
+        <div class="vc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${c.icon}</svg></div>
+        <div class="vc-name">${c.name}</div>
+        ${chips ? `<div class="vc-vendors">${chips}</div>` : ''}
+        <div class="vc-add-btn">+ ${list.length ? 'Gestisci' : 'Aggiungi'}</div>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="page-header">
+      <div><h1><em>Fornitori</em></h1></div>
+      <button class="btn btn-primary" onclick="openVendorAdd()">+ Aggiungi fornitore</button>
+    </div>
+
+    <div class="vendors-head">
+      <div class="vendors-progress-row">
+        <span class="vendors-progress-label">${catsBooked} di ${VENDOR_CATEGORIES.length} categorie prenotate</span>
+        <div class="vendors-progress-bar"><div class="vendors-progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="vendors-tabs">
+        <div class="vendor-tab ${vendorFilter === 'all' ? 'active' : ''}" onclick="setVendorFilter('all')">Tutti <span class="vt-count">${vendors.length}</span></div>
+        <div class="vendor-tab ${vendorFilter === 'saved' ? 'active' : ''}" onclick="setVendorFilter('saved')"><span class="vt-heart">♥</span> Salvati <span class="vt-count">${savedCount}</span></div>
+        <div class="vendor-tab ${vendorFilter === 'booked' ? 'active' : ''}" onclick="setVendorFilter('booked')"><span class="vt-check">✓</span> Prenotati <span class="vt-count">${bookedCount}</span></div>
+      </div>
+    </div>
+
+    <div class="vendors-grid">${cards || '<p style="color:var(--ink-muted)">Nessun fornitore con questo filtro.</p>'}</div>
+  `;
+}
+
+function catName(key) {
+  const c = VENDOR_CATEGORIES.find(x => x.key === key);
+  return c ? c.name : 'Altro';
+}
+
+function openVendorCategory(catKey) {
+  const list = (state.vendors || []).filter(v => v.cat === catKey);
+  const rows = list.map(v => `
+    <div class="vmodal-vendor" id="vrow-${v.id}">
+      <div class="vmodal-vendor-top">
+        <input class="guest-inp no-cap" type="text" style="flex:1;border:1px solid var(--line)" value="${esc(v.name || '')}" placeholder="Nome fornitore" oninput="updateVendor('${v.id}','name',this.value)">
+        <button class="guest-del" title="Elimina" onclick="deleteVendor('${v.id}','${catKey}')">✕</button>
+      </div>
+      <div class="vmodal-status" style="margin-bottom:8px">
+        <button class="${v.status === 'saved' ? 'on-saved' : ''}" onclick="setVendorStatus('${v.id}','saved','${catKey}')">♥ Salvato</button>
+        <button class="${v.status === 'booked' ? 'on-booked' : ''}" onclick="setVendorStatus('${v.id}','booked','${catKey}')">✓ Prenotato</button>
+      </div>
+      <input class="guest-inp no-cap" type="text" style="width:100%;border:1px solid var(--line);margin-bottom:6px" value="${esc(v.contact || '')}" placeholder="Contatto (telefono, email...)" oninput="updateVendor('${v.id}','contact',this.value)">
+      <input class="guest-inp no-cap" type="text" style="width:100%;border:1px solid var(--line)" value="${esc(v.notes || '')}" placeholder="Note" oninput="updateVendor('${v.id}','notes',this.value)">
+    </div>
+  `).join('');
+
+  openModal(`
+    <h2>${esc(catName(catKey))}</h2>
+    <div id="vmodal-list" style="margin:14px 0;max-height:360px;overflow-y:auto">
+      ${rows || '<p style="color:var(--ink-muted);font-size:13px">Nessun fornitore in questa categoria.</p>'}
+    </div>
+    <div style="display:flex;justify-content:space-between;gap:8px">
+      <button class="btn btn-primary" onclick="addVendor('${catKey}')">+ Aggiungi fornitore</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Chiudi</button>
+    </div>
+  `);
+}
+
+function addVendor(catKey) {
+  if (!state.vendors) state.vendors = [];
+  state.vendors.push({ id: uid(), cat: catKey, name: '', status: 'saved', contact: '', notes: '' });
+  saveData();
+  openVendorCategory(catKey);   // riapre il modale aggiornato
+  setTimeout(() => {
+    const list = document.getElementById('vmodal-list');
+    if (list) { list.scrollTop = list.scrollHeight; const inp = list.querySelector('.vmodal-vendor:last-child input'); if (inp) inp.focus(); }
+  }, 40);
+}
+
+function updateVendor(id, field, value) {
+  const v = (state.vendors || []).find(x => x.id === id);
+  if (!v) return;
+  v[field] = value;
+  saveData();   // niente re-render: mantiene il focus
+}
+
+function setVendorStatus(id, status, catKey) {
+  const v = (state.vendors || []).find(x => x.id === id);
+  if (!v) return;
+  v.status = status;
+  saveData();
+  openVendorCategory(catKey);   // aggiorna i bottoni nel modale
+}
+
+function deleteVendor(id, catKey) {
+  state.vendors = (state.vendors || []).filter(x => x.id !== id);
+  saveData();
+  openVendorCategory(catKey);
+}
+
+function openVendorAdd() {
+  const opts = VENDOR_CATEGORIES.map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+  openModal(`
+    <h2>Aggiungi fornitore</h2>
+    <div class="field" style="margin:16px 0 14px"><label>Categoria</label>
+      <select id="va-cat" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;background:var(--bg)">${opts}</select>
+    </div>
+    <div class="field" style="margin-bottom:14px"><label>Nome fornitore</label>
+      <input id="va-name" class="no-cap" type="text" placeholder="Es. Studio Rossi Fotografia">
+    </div>
+    <div class="field" style="margin-bottom:18px"><label>Stato</label>
+      <select id="va-status" style="width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:14px;background:var(--bg)">
+        <option value="saved">♥ Salvato</option>
+        <option value="booked">✓ Prenotato</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="confirmVendorAdd()">Aggiungi</button>
+    </div>
+  `);
+}
+
+function confirmVendorAdd() {
+  const cat = document.getElementById('va-cat').value;
+  const name = document.getElementById('va-name').value.trim();
+  const status = document.getElementById('va-status').value;
+  if (!name) { toast('Inserisci il nome del fornitore'); return; }
+  if (!state.vendors) state.vendors = [];
+  state.vendors.push({ id: uid(), cat, name, status, contact: '', notes: '' });
+  saveData();
+  closeModal();
+  render();
+  toast('Fornitore aggiunto');
+}
 let _floatingDragOffset = { x: 0, y: 0 };
 let _floatingDragging = false;
 
