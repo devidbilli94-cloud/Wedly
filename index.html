@@ -4213,6 +4213,39 @@ textarea {
   box-shadow: none;
 }
 .btn-danger:hover, .main .btn-danger:hover { color: var(--burgundy) !important; background: rgba(122,46,59,0.08) !important; }
+
+/* ============================================
+   CARD A COLORE PIENO (non devono diventare vetro)
+   ============================================ */
+/* Saldo Attuale: sfondo verde, scritta oro */
+.kpi.featured {
+  background: linear-gradient(135deg, #2d4329 0%, #4a6e45 100%) !important;
+  color: #f6f0e7 !important;
+  border: 1.5px solid var(--gold) !important;
+  box-shadow: 0 0 0 1px rgba(184, 156, 90, 0.35), 0 12px 30px rgba(20, 30, 18, 0.20), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+}
+.kpi.featured .label { color: rgba(246, 240, 231, 0.75) !important; }
+.kpi.featured .value,
+.kpi.featured .value .currency { color: var(--gold) !important; }
+
+/* Fasce informative: mantengono la loro tinta */
+.total-banner {
+  background: linear-gradient(135deg, rgba(184, 156, 90, 0.20), rgba(184, 156, 90, 0.06)) !important;
+  border: 1px solid rgba(184, 156, 90, 0.45) !important;
+}
+.savings-banner {
+  background: linear-gradient(135deg, rgba(94, 130, 94, 0.16), rgba(94, 130, 94, 0.05)) !important;
+  border: 1px solid rgba(13, 130, 70, 0.32) !important;
+}
+.shared-banner {
+  background: linear-gradient(135deg, rgba(94, 130, 94, 0.12), rgba(184, 156, 90, 0.07)) !important;
+  border: 1px solid rgba(184, 156, 90, 0.32) !important;
+}
+/* La card "in attesa di recensione" resta tratteggiata */
+.rev-card.pending {
+  background: rgba(255, 253, 249, 0.30) !important;
+  border: 1px dashed rgba(94, 130, 94, 0.45) !important;
+}
 </style>
 </head>
 <body>
