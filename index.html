@@ -3953,6 +3953,13 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .rev-card.pending { background:var(--bg); border-style:dashed; }
 .rev-card.pending .rev-pending-msg { color:var(--ink-muted); font-size:14px; font-style:italic; font-family:'Cormorant Garamond',serif; }
 .rev-section-label { font-size:11px; text-transform:uppercase; letter-spacing:0.13em; color:var(--ink-muted); font-weight:700; margin:8px 0 14px; }
+
+/* Layout Sposi & PIN a due colonne */
+.couple-layout { display:grid; grid-template-columns:minmax(0,600px) 1fr; gap:28px; align-items:start; }
+@media (max-width:1000px){ .couple-layout{ grid-template-columns:1fr; } }
+.couple-col-left .card { max-width:none; margin-bottom:0; }
+.couple-col-right .section-divider:first-child { margin-top:0; }
+.couple-right-box { max-width:none !important; width:100%; }
 </style>
 </head>
 <body>
@@ -6357,64 +6364,70 @@ function renderCouple() {
         <h1>Gli <em>Sposi</em></h1>
       </div>
     </div>
-    <div class="card elevated" style="max-width:620px;margin-bottom:20px">
-      <div class="form-row two">
-        <div class="field">
-          <label>Sposa</label>
-          <input id="edit-bride" type="text" value="${esc(bride)}">
+    <div class="couple-layout">
+      <div class="couple-col-left">
+        <div class="card elevated">
+          <div class="form-row two">
+            <div class="field">
+              <label>Sposa</label>
+              <input id="edit-bride" type="text" value="${esc(bride)}">
+            </div>
+            <div class="field">
+              <label>Sposo</label>
+              <input id="edit-groom" type="text" value="${esc(groom)}">
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:14px">
+            <label>Data del matrimonio</label>
+            <input id="edit-date" type="date" value="${esc(date)}">
+          </div>
+          <div class="field" style="margin-bottom:14px">
+            <label>Tipo di rito</label>
+            <select id="edit-ceremony-type" onchange="updateCeremonyLabel('edit')">
+              <option value="" ${!ceremonyType ? 'selected' : ''}>— Seleziona —</option>
+              <option value="religioso" ${ceremonyType === 'religioso' ? 'selected' : ''}>Religioso</option>
+              <option value="civile" ${ceremonyType === 'civile' ? 'selected' : ''}>Civile</option>
+            </select>
+          </div>
+          <div class="field" id="edit-ceremony-church-wrap" style="display:${ceremonyType === 'religioso' ? '' : 'none'};margin-bottom:14px">
+            <label>Presso la chiesa</label>
+            <input id="edit-ceremony-church" type="text" value="${esc(ceremonyChurch)}">
+          </div>
+          <div class="field" style="margin-bottom:18px">
+            <label>Luogo della cerimonia</label>
+            <input id="edit-ceremony-location" type="text" value="${esc(ceremonyLocation)}">
+          </div>
+          <button class="btn btn-primary" onclick="saveCouple()">Salva modifiche</button>
+          <button class="btn btn-ghost" style="margin-left:8px" onclick="openProjectPicker()">Gestisci progetti</button>
+          <button class="btn btn-ghost" style="margin-left:8px" onclick="openNewProjectForm()">+ Nuovo matrimonio</button>
         </div>
-        <div class="field">
-          <label>Sposo</label>
-          <input id="edit-groom" type="text" value="${esc(groom)}">
+      </div>
+
+      <div class="couple-col-right">
+        <div class="section-divider"><div class="title">PIN per gli Sposi</div><div class="line"></div></div>
+        <div class="pin-card couple-right-box" style="margin-bottom:24px">
+          <div class="pin-info">
+            <div class="pin-info-label">Codice di accesso allo Spazio Condiviso</div>
+            <div class="pin-info-code">${state.pin.split('').join(' ')}</div>
+            <div class="pin-info-desc">Comunica questo PIN a ${esc(bride) || 'sposa'} e ${esc(groom) || 'sposo'}: lo useranno per accedere alla pagina di co-creazione (vedono solo lo spazio condiviso, non le altre informazioni).</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary btn-sm" onclick="copyPin('${state.pin}')">Copia</button>
+            <button class="btn btn-ghost btn-sm" onclick="regeneratePin('${state.id}')">Rigenera</button>
+          </div>
         </div>
-      </div>
-      <div class="field" style="margin-bottom:14px">
-        <label>Data del matrimonio</label>
-        <input id="edit-date" type="date" value="${esc(date)}">
-      </div>
-      <div class="field" style="margin-bottom:14px">
-        <label>Tipo di rito</label>
-        <select id="edit-ceremony-type" onchange="updateCeremonyLabel('edit')">
-          <option value="" ${!ceremonyType ? 'selected' : ''}>— Seleziona —</option>
-          <option value="religioso" ${ceremonyType === 'religioso' ? 'selected' : ''}>Religioso</option>
-          <option value="civile" ${ceremonyType === 'civile' ? 'selected' : ''}>Civile</option>
-        </select>
-      </div>
-      <div class="field" id="edit-ceremony-church-wrap" style="display:${ceremonyType === 'religioso' ? '' : 'none'};margin-bottom:14px">
-        <label>Presso la chiesa</label>
-        <input id="edit-ceremony-church" type="text" value="${esc(ceremonyChurch)}">
-      </div>
-      <div class="field" style="margin-bottom:18px">
-        <label>Luogo della cerimonia</label>
-        <input id="edit-ceremony-location" type="text" value="${esc(ceremonyLocation)}">
-      </div>
-      <button class="btn btn-primary" onclick="saveCouple()">Salva modifiche</button>
-      <button class="btn btn-ghost" style="margin-left:8px" onclick="openProjectPicker()">Gestisci progetti</button>
-      <button class="btn btn-ghost" style="margin-left:8px" onclick="openNewProjectForm()">+ Nuovo matrimonio</button>
-    </div>
 
-    <div class="section-divider"><div class="title">PIN per gli Sposi</div><div class="line"></div></div>
-    <div class="pin-card" style="max-width:560px;margin-bottom:24px">
-      <div class="pin-info">
-        <div class="pin-info-label">Codice di accesso allo Spazio Condiviso</div>
-        <div class="pin-info-code">${state.pin.split('').join(' ')}</div>
-        <div class="pin-info-desc">Comunica questo PIN a ${esc(bride) || 'sposa'} e ${esc(groom) || 'sposo'}: lo useranno per accedere alla pagina di co-creazione (vedono solo lo spazio condiviso, non le altre informazioni).</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-primary btn-sm" onclick="copyPin('${state.pin}')">Copia</button>
-        <button class="btn btn-ghost btn-sm" onclick="regeneratePin('${state.id}')">Rigenera</button>
-      </div>
-    </div>
-
-    <div class="section-divider"><div class="title">Condivisione Online</div><div class="line"></div></div>
-    <div class="card elevated" style="max-width:560px;margin-bottom:24px">
-      <p style="color:var(--ink-soft);font-size:14px;line-height:1.6;margin-bottom:18px">
-        I dati sono salvati online e si aggiornano da soli: gli sposi vedono sempre la versione più recente
-        accedendo col PIN, e i loro commenti compaiono qui automaticamente.
-      </p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="showCoupleLink()">Link per gli sposi</button>
-        <button class="btn btn-ghost" onclick="openCloudSettings()">⚙ Impostazioni cloud</button>
+        <div class="section-divider"><div class="title">Condivisione Online</div><div class="line"></div></div>
+        <div class="card elevated couple-right-box">
+          <p style="color:var(--ink-soft);font-size:14px;line-height:1.6;margin-bottom:18px">
+            I dati sono salvati online e si aggiornano da soli: gli sposi vedono sempre la versione più recente
+            accedendo col PIN, e i loro commenti compaiono qui automaticamente.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="showCoupleLink()">Link per gli sposi</button>
+            <button class="btn btn-ghost" onclick="openCloudSettings()">⚙ Impostazioni cloud</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
