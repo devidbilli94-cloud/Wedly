@@ -4159,6 +4159,60 @@ textarea {
 .btn-danger,
 .badge { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .rev-overview, .kpi.featured { border-radius: var(--radius) !important; }
+
+/* ============================================
+   BOTTONI DELLE SEZIONI: verdi con scritta chiara
+   ============================================ */
+.btn-primary,
+.main .btn-ghost,
+.plan-quickadd .pq-plus,
+.vendor-cat-card .vc-add-btn,
+.calendar-nav .today-btn {
+  background: var(--terracotta) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 2px 10px rgba(94, 130, 94, 0.28);
+}
+.btn-primary:hover,
+.main .btn-ghost:hover,
+.plan-quickadd .pq-plus:hover,
+.vendor-cat-card .vc-add-btn:hover,
+.vendor-cat-card:hover .vc-add-btn,
+.calendar-nav .today-btn:hover {
+  background: #4e6c4e !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(94, 130, 94, 0.34);
+}
+
+/* Nei modali i secondari (Annulla/Chiudi) restano neutri */
+.modal .btn-ghost,
+.modal-actions .btn-ghost,
+#__cf-cancel {
+  background: rgba(255, 255, 255, 0.55) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+  box-shadow: none;
+}
+.modal .btn-ghost:hover,
+.modal-actions .btn-ghost:hover,
+#__cf-cancel:hover {
+  background: rgba(255, 255, 255, 0.75) !important;
+  color: var(--terracotta) !important;
+  border-color: var(--terracotta) !important;
+}
+
+/* Le azioni distruttive restano discrete */
+.btn-danger,
+.main .btn-danger {
+  background: transparent !important;
+  color: var(--ink-muted) !important;
+  border-color: transparent !important;
+  box-shadow: none;
+}
+.btn-danger:hover, .main .btn-danger:hover { color: var(--burgundy) !important; background: rgba(122,46,59,0.08) !important; }
 </style>
 </head>
 <body>
