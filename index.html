@@ -1280,7 +1280,7 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
 .cal-wedding-day.past .cwd-names { color: #3f5c37; }
 .cal-wedding-day.past .cwd-amp { color: #7a9a6a; }
 .cal-wedding-day.past .cwd-flourish { color: #6e8a5e; opacity: 0.9; }
-.cal-wedding-day.past .cwd-tag { color: #4a6e45; opacity: 0.95; }
+.cal-wedding-day.past .cwd-tag { color: #4a6e45; opacity: 0.95; font-size: 12px; letter-spacing: 0; margin-top: 1px; }
 .cal-wedding-day.past .cwd-rings {
   position: absolute;
   top: 2px;
@@ -7052,7 +7052,7 @@ function renderRemindersCalendar() {
               ${isPast ? '<svg class="cwd-rings" viewBox="0 0 26 16" fill="none" stroke="#b89c5a" stroke-width="2"><circle cx="9" cy="8" r="6"/><circle cx="17" cy="8" r="6"/></svg>' : ''}
               <div class="cwd-flourish">━━ ${isPast ? '✓' : '❦'} ━━</div>
               <div class="cwd-names">${esc(w.bride)} <span class="cwd-amp">&amp;</span> ${esc(w.groom)}</div>
-              <div class="cwd-tag">${isPast ? 'celebrato' : 'il grande giorno'}</div>
+              <div class="cwd-tag">${isPast ? '💚' : 'il grande giorno'}</div>
             </div>
           `;
           }).join('');
