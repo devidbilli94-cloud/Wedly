@@ -4145,11 +4145,17 @@ textarea {
   backdrop-filter: blur(8px);
 }
 .nav-item { border-radius: var(--radius-sm); }
-.nav-item.active {
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+.nav-item.active,
+.nav-item.active:hover {
+  background: var(--terracotta) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 2px 10px rgba(94, 130, 94, 0.28);
 }
+.nav-item.active .icon { color: #fff !important; }
+.nav-item:hover { background: rgba(94, 130, 94, 0.10); }
 
 /* Elementi che restano pieni per leggibilità */
 .rev-overview,
