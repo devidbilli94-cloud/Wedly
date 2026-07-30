@@ -3981,6 +3981,184 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .couple-col-left .card { max-width:none; margin-bottom:0; }
 .couple-col-right .section-divider:first-child { margin-top:0; }
 .couple-right-box { max-width:none !important; width:100%; }
+
+/* ============================================
+   EFFETTO VETRO (glassmorphism) + angoli stondati
+   ============================================ */
+:root {
+  --radius: 20px;
+  --radius-sm: 13px;
+  --glass-bg: rgba(255, 253, 249, 0.58);
+  --glass-bg-soft: rgba(255, 253, 249, 0.40);
+  --glass-brd: rgba(255, 255, 255, 0.70);
+  --glass-shadow: 0 8px 32px rgba(76, 56, 36, 0.10), inset 0 1px 0 rgba(255,255,255,0.55);
+  --glass-blur: saturate(160%) blur(16px);
+}
+
+/* Sfondo con macchie di colore: dà profondità al vetro */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38vw 38vw at 12% 8%, rgba(120, 177, 89, 0.16), transparent 65%),
+    radial-gradient(42vw 42vw at 88% 18%, rgba(184, 156, 90, 0.16), transparent 62%),
+    radial-gradient(45vw 45vw at 78% 88%, rgba(94, 130, 94, 0.14), transparent 65%),
+    radial-gradient(36vw 36vw at 22% 82%, rgba(200, 146, 126, 0.12), transparent 65%);
+}
+
+/* --- Contenitori principali: vetro pieno --- */
+.card,
+.card.elevated,
+.chart-card,
+.kpi,
+.pin-card,
+.pin-entry-card,
+.setup-card,
+.new-project-card,
+.couple-card,
+.design-card,
+.reminder-card,
+.appointment-card,
+.vendor-cat-card,
+.rev-card,
+.quote-detail-card,
+.qdc-box,
+.task-row,
+.guest-stat,
+.plan-progress,
+.plan-quickadd,
+.plan-budget-mini,
+.planning-summary,
+.calendar,
+.tables-canvas,
+.tables-side,
+.floating-reminders,
+.empty-state,
+.savings-banner,
+.total-banner,
+.shared-banner,
+.task-payments,
+.cal-legend,
+.quote-table-wrap,
+.guest-table-wrap,
+.modal {
+  background: var(--glass-bg) !important;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-brd) !important;
+  border-radius: var(--radius) !important;
+  box-shadow: var(--glass-shadow);
+}
+
+.modal {
+  background: rgba(255, 253, 249, 0.88) !important;
+  box-shadow: 0 24px 70px rgba(76, 56, 36, 0.22);
+}
+.modal-overlay {
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.sidebar {
+  background: rgba(255, 253, 249, 0.55) !important;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-brd);
+}
+
+.toast {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius) !important;
+}
+
+/* --- Righe ed elementi ripetuti: solo traslucido (niente blur, resta fluido) --- */
+.impegno-row,
+.shared-row,
+.transaction-row,
+.payment-row,
+.comment,
+.project-item,
+.seat-assign-row,
+.cal-cell,
+.vc-chip,
+.plan-fchip,
+.filter-chip,
+.attach-chip,
+.vendor-tab {
+  background: var(--glass-bg-soft) !important;
+  border-color: rgba(255, 255, 255, 0.60) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.impegno-row,
+.shared-row,
+.quote-detail-card,
+.reminder-card,
+.appointment-card,
+.rev-card,
+.vendor-cat-card,
+.design-card,
+.guest-stat,
+.kpi { border-radius: var(--radius) !important; }
+
+/* --- Tabelle: cornice in vetro e angoli stondati --- */
+.quote-table-wrap,
+.guest-table-wrap { overflow: hidden; }
+
+table.guest-table th,
+.quote-table thead th,
+.detail-table th {
+  background: rgba(255, 255, 255, 0.45) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+table.guest-table td,
+table.guest-table th,
+.quote-table td,
+.quote-table th,
+.detail-table td,
+.detail-table th { border-color: rgba(255, 255, 255, 0.55) !important; }
+table.guest-table tbody tr:nth-child(even),
+.quote-table tbody tr:nth-child(even) { background: rgba(255, 255, 255, 0.22); }
+table.guest-table tbody tr:hover,
+.quote-table tbody tr:hover { background: rgba(255, 255, 255, 0.42); }
+
+/* --- Campi e bottoni coerenti col vetro --- */
+.field input,
+.field select,
+.field textarea,
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.55) !important;
+  border-radius: var(--radius-sm) !important;
+}
+.btn { border-radius: var(--radius-sm) !important; }
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.45) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.nav-item { border-radius: var(--radius-sm); }
+.nav-item.active {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Elementi che restano pieni per leggibilità */
+.rev-overview,
+.cal-wedding-day,
+.kpi.featured,
+.btn-primary,
+.btn-danger,
+.badge { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.rev-overview, .kpi.featured { border-radius: var(--radius) !important; }
 </style>
 </head>
 <body>
