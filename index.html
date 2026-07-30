@@ -6443,8 +6443,13 @@ function renderReminders() {
 
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // Build one wedding card per project
-  const weddingCards = store.projects.map(p => {
+  // Card in alto: solo i matrimoni ancora da celebrare (i celebrati restano nel calendario)
+  const upcomingProjects = store.projects.filter(p => {
+    if (!p.couple || !p.couple.date) return true; // senza data: sempre visibile
+    const d = new Date(p.couple.date); d.setHours(0, 0, 0, 0);
+    return d >= today;
+  });
+  const weddingCards = upcomingProjects.map(p => {
     const isActive = p.id === store.activeProjectId;
     const bride = (p.couple && p.couple.bride) || 'Sposa';
     const groom = (p.couple && p.couple.groom) || 'Sposo';
