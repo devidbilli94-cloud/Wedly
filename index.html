@@ -4310,10 +4310,6 @@ textarea {
       <input id="connect-api" class="no-cap" type="text" placeholder="https://wedly-api.tuonome.workers.dev">
     </div>
     <div class="field" style="margin-bottom:14px">
-      <label>Token segreto (ADMIN_TOKEN)</label>
-      <input id="connect-token" class="no-cap" type="password" placeholder="il Secret impostato nel Worker">
-    </div>
-    <div class="field" style="margin-bottom:14px">
       <label>URL del portale sposi</label>
       <input id="connect-portal" class="no-cap" type="text" placeholder="https://wedly-newlyweds.pages.dev">
     </div>
@@ -4330,6 +4326,25 @@ textarea {
   <div class="setup-card" style="text-align:center">
     <div class="brand-logo-big" role="img" aria-label="Veronica Cosimo - Wedding Planner & Designer"></div>
     <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--ink-soft);margin-top:10px">Caricamento in corso…</div>
+  </div>
+</div>
+
+<!-- ===== SCHERMATA ACCESSO (password planner) ===== -->
+<div id="login-screen" class="setup-screen" style="display:none">
+  <div class="setup-card" style="text-align:center;max-width:420px">
+    <div class="brand-logo-big" role="img" aria-label="Veronica Cosimo - Wedding Planner & Designer"></div>
+    <h2 id="login-title" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:26px;color:var(--terracotta);margin:14px 0 6px">Accesso riservato</h2>
+    <p id="login-desc" style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--ink-soft);margin-bottom:20px">Inserisci la password per entrare.</p>
+    <div class="field" style="text-align:left;margin-bottom:12px">
+      <label>Password</label>
+      <input id="login-pw" class="no-cap" type="password" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <div class="field" id="login-pw2-wrap" style="text-align:left;margin-bottom:12px;display:none">
+      <label>Ripeti la password</label>
+      <input id="login-pw2" class="no-cap" type="password" autocomplete="new-password" placeholder="••••••••">
+    </div>
+    <div id="login-msg" style="min-height:20px;font-size:13px;color:var(--burgundy);margin-bottom:10px"></div>
+    <button class="btn btn-primary" style="width:100%" id="login-btn" onclick="doLogin()">Entra</button>
   </div>
 </div>
 
@@ -4548,20 +4563,40 @@ const CLOUD_KEY = 'wp_cloud_config';
 // ─────────────────────────────────────────────────────────────
 const CLOUD_DEFAULTS = {
   apiBase:    'https://wedly.devidbilli94.workers.dev',
-  adminToken: 'ZMguIipWiN4bJ0W1hZT68iZYxleC6Dm-EFkl1oYKa0s',
   portalBase: 'https://wedly-viewer.pages.dev',  // cambia se la Page sposi ha un altro nome
 };
 function hasCloudDefaults() {
-  return !!(CLOUD_DEFAULTS.apiBase && CLOUD_DEFAULTS.adminToken && CLOUD_DEFAULTS.portalBase);
+  return !!(CLOUD_DEFAULTS.apiBase && CLOUD_DEFAULTS.portalBase);
 }
 
-let cloudCfg = null;          // { apiBase, adminToken, portalBase }
+let cloudCfg = null;          // { apiBase, portalBase }
 let _indexTimer = null;
+
+// ---- Sessione di accesso (rilasciata dal server dopo il login) ----
+const SESSION_KEY = 'wedly_session';
+let sessionToken = null;
+
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
+    if (s && s.token && (!s.expiresAt || s.expiresAt > Date.now())) { sessionToken = s.token; return true; }
+  } catch {}
+  sessionToken = null;
+  return false;
+}
+function saveSession(s) {
+  sessionToken = s.token;
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ token: s.token, expiresAt: s.expiresAt }));
+}
+function clearSession() {
+  sessionToken = null;
+  localStorage.removeItem(SESSION_KEY);
+}
 
 function getCloudCfg() {
   try {
     const saved = JSON.parse(localStorage.getItem(CLOUD_KEY) || 'null');
-    if (saved && saved.apiBase && saved.adminToken && saved.portalBase) return saved;
+    if (saved && saved.apiBase && saved.portalBase) return saved;
   } catch {}
   if (hasCloudDefaults()) return { ...CLOUD_DEFAULTS };
   return null;
@@ -4584,13 +4619,20 @@ function setSyncBadge(s) {
 }
 
 async function cloudFetch(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (sessionToken) headers['Authorization'] = 'Bearer ' + sessionToken;
   const res = await fetch(cloudCfg.apiBase + path, {
     method: opts.method || 'GET',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cloudCfg.adminToken },
+    headers,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   let data = {};
   try { data = await res.json(); } catch {}
+  if (res.status === 401 && !opts.noAuthRedirect) {
+    clearSession();
+    showLogin();
+    throw new Error('Sessione scaduta: accedi di nuovo');
+  }
   if (!res.ok) throw new Error(data.error || ('Errore ' + res.status));
   return data;
 }
@@ -4965,7 +5007,7 @@ function updateCoupleDisplay() {
 }
 
 function hideAllScreens() {
-  ['setup-screen','app','pin-screen','couple-mode-screen','connect-screen','loading-screen']
+  ['setup-screen','app','pin-screen','couple-mode-screen','connect-screen','loading-screen','login-screen']
     .forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 }
 
@@ -4982,16 +5024,124 @@ function showLoading() {
   hideAllScreens();
   document.getElementById('loading-screen').style.display = 'flex';
 }
+// ---- Accesso con password ----
+let _loginMode = 'login';   // 'login' | 'setup'
+
+async function showLogin(msg) {
+  hideAllScreens();
+  document.getElementById('login-screen').style.display = 'flex';
+  const msgEl = document.getElementById('login-msg');
+  msgEl.style.color = 'var(--burgundy)';
+  msgEl.textContent = msg || '';
+  document.getElementById('login-pw').value = '';
+  document.getElementById('login-pw2').value = '';
+  // Primo avvio? Allora si CREA la password invece di inserirla
+  try {
+    const st = await cloudFetch('/auth/status', { noAuthRedirect: true });
+    _loginMode = st.configured ? 'login' : 'setup';
+  } catch { _loginMode = 'login'; }
+  const isSetup = _loginMode === 'setup';
+  document.getElementById('login-title').textContent = isSetup ? 'Crea la password' : 'Accesso riservato';
+  document.getElementById('login-desc').textContent = isSetup
+    ? 'Primo avvio: scegli la password che protegge l\u2019applicazione (almeno 8 caratteri).'
+    : 'Inserisci la password per entrare.';
+  document.getElementById('login-pw2-wrap').style.display = isSetup ? '' : 'none';
+  document.getElementById('login-btn').textContent = isSetup ? 'Crea password ed entra' : 'Entra';
+  document.getElementById('login-pw').setAttribute('autocomplete', isSetup ? 'new-password' : 'current-password');
+  setTimeout(() => document.getElementById('login-pw').focus(), 60);
+}
+
+async function doLogin() {
+  const msgEl = document.getElementById('login-msg');
+  const pw = document.getElementById('login-pw').value;
+  msgEl.style.color = 'var(--burgundy)';
+  if (!pw) { msgEl.textContent = 'Inserisci la password.'; return; }
+  if (_loginMode === 'setup') {
+    const pw2 = document.getElementById('login-pw2').value;
+    if (pw.length < 8) { msgEl.textContent = 'La password deve avere almeno 8 caratteri.'; return; }
+    if (pw !== pw2) { msgEl.textContent = 'Le due password non coincidono.'; return; }
+  }
+  msgEl.style.color = 'var(--ink-soft)';
+  msgEl.textContent = 'Verifica in corso…';
+  try {
+    const path = _loginMode === 'setup' ? '/auth/setup' : '/auth/login';
+    const res = await cloudFetch(path, { method: 'POST', body: { password: pw }, noAuthRedirect: true });
+    saveSession(res);
+    msgEl.textContent = '';
+    await bootAfterLogin();
+  } catch (e) {
+    msgEl.style.color = 'var(--burgundy)';
+    msgEl.textContent = e.message || 'Accesso non riuscito.';
+  }
+}
+
+function confirmLogout() {
+  confirmAction({
+    title: 'Esci dall\u2019applicazione',
+    message: 'Per rientrare servir\u00e0 di nuovo la password. Continuare?',
+    confirmText: 'Esci',
+    onConfirm: doLogout,
+  });
+}
+
+async function doLogout() {
+  try { await cloudFetch('/auth/logout', { method: 'POST', noAuthRedirect: true }); } catch {}
+  clearSession();
+  try { localStorage.removeItem(STORE_KEY); } catch {}
+  location.reload();
+}
+
+// Cambio password (dalla sezione Sposi & PIN)
+function openPasswordChange() {
+  openModal(`
+    <h2 style="margin-bottom:6px">Cambia password</h2>
+    <p style="color:var(--ink-soft);font-size:13.5px;line-height:1.6;margin-bottom:18px">
+      Serve la password attuale. Cambiandola si chiudono tutti gli accessi già aperti, anche su altri dispositivi.
+    </p>
+    <div class="field" style="margin-bottom:12px"><label>Password attuale</label>
+      <input id="pw-cur" class="no-cap" type="password" autocomplete="current-password"></div>
+    <div class="field" style="margin-bottom:12px"><label>Nuova password</label>
+      <input id="pw-new" class="no-cap" type="password" autocomplete="new-password" placeholder="almeno 8 caratteri"></div>
+    <div class="field" style="margin-bottom:8px"><label>Ripeti la nuova password</label>
+      <input id="pw-new2" class="no-cap" type="password" autocomplete="new-password"></div>
+    <div id="pw-msg" style="min-height:20px;font-size:13px;color:var(--burgundy)"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
+      <button class="btn btn-primary" onclick="savePasswordChange()">Salva</button>
+    </div>
+  `);
+}
+
+async function savePasswordChange() {
+  const msg = document.getElementById('pw-msg');
+  const cur = document.getElementById('pw-cur').value;
+  const nw = document.getElementById('pw-new').value;
+  const nw2 = document.getElementById('pw-new2').value;
+  msg.style.color = 'var(--burgundy)';
+  if (!cur) { msg.textContent = 'Inserisci la password attuale.'; return; }
+  if (nw.length < 8) { msg.textContent = 'La nuova password deve avere almeno 8 caratteri.'; return; }
+  if (nw !== nw2) { msg.textContent = 'Le due nuove password non coincidono.'; return; }
+  msg.style.color = 'var(--ink-soft)';
+  msg.textContent = 'Salvataggio…';
+  try {
+    const res = await cloudFetch('/auth/change', { method: 'POST', body: { currentPassword: cur, newPassword: nw }, noAuthRedirect: true });
+    saveSession(res);
+    closeModal();
+    toast('Password aggiornata');
+  } catch (e) {
+    msg.style.color = 'var(--burgundy)';
+    msg.textContent = e.message || 'Non riuscito.';
+  }
+}
+
 function showConnect(errMsg) {
   hideAllScreens();
   document.getElementById('connect-screen').style.display = 'flex';
   const cfg = getCloudCfg();
   if (cfg) {
     const a = document.getElementById('connect-api');
-    const t = document.getElementById('connect-token');
     const p = document.getElementById('connect-portal');
     if (a) a.value = cfg.apiBase || '';
-    if (t) t.value = cfg.adminToken || '';
     if (p) p.value = cfg.portalBase || '';
   }
   const err = document.getElementById('connect-error');
@@ -5001,20 +5151,19 @@ function showConnect(errMsg) {
 async function doConnect() {
   const cfg = {
     apiBase: normalizeBase(document.getElementById('connect-api').value),
-    adminToken: document.getElementById('connect-token').value.trim(),
     portalBase: normalizeBase(document.getElementById('connect-portal').value),
   };
   const err = document.getElementById('connect-error');
-  if (!cfg.apiBase || !cfg.adminToken || !cfg.portalBase) {
-    err.textContent = 'Compila tutti e tre i campi.';
+  if (!cfg.apiBase || !cfg.portalBase) {
+    err.textContent = 'Compila entrambi i campi.';
     return;
   }
   err.textContent = '';
   showLoading();
   cloudCfg = cfg;
+  setCloudCfg(cfg);
+  if (!loadSession()) { await showLogin(); return; }
   try {
-    await cloudFetch('/planner/login', { method: 'POST', body: {} });
-    setCloudCfg(cfg);
     await cloudLoad();
     await migrateLocalToCloudIfNeeded();
     bootUI();
@@ -6725,6 +6874,18 @@ function renderCouple() {
             <button class="btn btn-ghost" onclick="openCloudSettings()">⚙ Impostazioni cloud</button>
           </div>
         </div>
+
+        <div class="section-divider"><div class="title">Accesso all'App</div><div class="line"></div></div>
+        <div class="card elevated couple-right-box">
+          <p style="color:var(--ink-soft);font-size:14px;line-height:1.6;margin-bottom:18px">
+            L'applicazione è protetta da password. Cambiandola si chiudono tutti gli accessi già aperti,
+            su qualsiasi dispositivo: da quel momento entra solo chi conosce la nuova password.
+          </p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="openPasswordChange()">Cambia password</button>
+            <button class="btn btn-ghost" onclick="confirmLogout()">Esci</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -6793,10 +6954,6 @@ function openCloudSettings() {
       <label>URL del Worker (API)</label>
       <input id="cfg-api" class="no-cap" type="text" placeholder="https://wedly-api.tuonome.workers.dev" value="${esc(cfg.apiBase || '')}">
     </div>
-    <div class="field" style="margin-bottom:14px">
-      <label>Token segreto (ADMIN_TOKEN)</label>
-      <input id="cfg-token" class="no-cap" type="password" placeholder="il Secret del Worker" value="${esc(cfg.adminToken || '')}">
-    </div>
     <div class="field" style="margin-bottom:20px">
       <label>URL del portale sposi</label>
       <input id="cfg-portal" class="no-cap" type="text" placeholder="https://wedly-newlyweds.pages.dev" value="${esc(cfg.portalBase || '')}">
@@ -6811,11 +6968,10 @@ function openCloudSettings() {
 function saveCloudSettings() {
   const cfg = {
     apiBase: normalizeBase(document.getElementById('cfg-api').value),
-    adminToken: document.getElementById('cfg-token').value.trim(),
     portalBase: normalizeBase(document.getElementById('cfg-portal').value),
   };
-  if (!cfg.apiBase || !cfg.adminToken || !cfg.portalBase) {
-    toast('Compila tutti e tre i campi');
+  if (!cfg.apiBase || !cfg.portalBase) {
+    toast('Compila entrambi i campi');
     return;
   }
   setCloudCfg(cfg);
@@ -8922,22 +9078,35 @@ function renderBudgetChart(transactions) {
     return;
   }
 
+  // Accesso: serve una sessione valida
+  if (!loadSession()) {
+    await showLogin();
+    disableInputSuggestions();
+    return;
+  }
+
+  await bootAfterLogin();
+  disableInputSuggestions();
+})();
+
+// Carica i dati dopo un accesso riuscito
+async function bootAfterLogin() {
   showLoading();
   try {
     await cloudLoad();
     await migrateLocalToCloudIfNeeded();
     bootUI();
   } catch (e) {
+    if (/sessione scaduta/i.test(e.message || '')) return;   // showLogin l'ha già mostrata
     if (loadLocalCache()) {
       bootUI();
       setSyncBadge(navigator.onLine ? 'error' : 'offline');
       toast('Modalità offline: modifiche non sincronizzate');
     } else {
-      showConnect('Impossibile connettersi: ' + e.message);
+      await showLogin('Impossibile connettersi: ' + e.message);
     }
   }
-  disableInputSuggestions();
-})();
+}
 
 // ============================================
 // AUTO-CAPITALIZE
