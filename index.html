@@ -4391,6 +4391,18 @@ textarea {
   z-index: 3;
   white-space: nowrap;
 }
+.da-sposi {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #8a6d2f;
+  background: rgba(184, 156, 90, 0.20);
+  border: 1px solid rgba(184, 156, 90, 0.50);
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
 .tbl-couple-note {
   font-size: 12.5px;
   color: #8a6d2f;
@@ -4942,12 +4954,14 @@ async function pollComments() {
     const data = await cloudFetch('/planner/comments');
     const changedC = mergeCloudComments(data.comments || {});
     const changedT = mergeCloudTables(data.tables || {});
-    if (changedC || changedT) {
+    const changedG = mergeCloudGuests(data.guests || {});
+    if (changedC || changedT || changedG) {
       // Aggiorna la vista solo se non c'è un modale aperto (per non disturbare un'azione in corso)
       const modalOpen = document.getElementById('modal-overlay')?.classList.contains('active');
       updateFloatingReminders && updateFloatingReminders();
       const viste = ['shared', 'couple', 'reminders'];
       if (changedT) viste.push('tables');
+      if (changedG) { viste.push('guests'); viste.push('tables'); }
       if (!modalOpen && viste.includes(currentView)) render();
     }
   } catch (e) { /* riprova al prossimo giro */ }
@@ -4993,6 +5007,28 @@ function mergeCloudTables(byWedding) {
       if (typeof _dragTable !== 'undefined' && _dragTable) return;
       local.tables = remote.tables || [];
       local.tablesUpdatedAt = tsRemote;
+      changed = true;
+    }
+  });
+  if (changed) cacheLocal();
+  return changed;
+}
+
+// Assorbe gli invitati inseriti dagli sposi dal loro portale.
+function mergeCloudGuests(byWedding) {
+  let changed = false;
+  Object.keys(byWedding).forEach(wid => {
+    const local = store.projects.find(p => p.id === wid);
+    if (!local) return;
+    const remote = byWedding[wid] || {};
+    const tsRemote = remote.guestsUpdatedAt || 0;
+    const tsLocal = local.guestsUpdatedAt || 0;
+    if (tsRemote > tsLocal) {
+      // non sovrascrivere mentre si sta scrivendo in un campo invitato
+      const attivo = document.activeElement;
+      if (attivo && attivo.classList && attivo.classList.contains('guest-inp')) return;
+      local.guests = remote.guests || [];
+      local.guestsUpdatedAt = tsRemote;
       changed = true;
     }
   });
@@ -5933,6 +5969,7 @@ function renderGuests() {
            oninput="updateGuestField('${x.id}','firstName',this.value)"></td>
       <td><input class="guest-inp no-cap" type="text" value="${esc(x.lastName || '')}" placeholder="Cognome"
            oninput="updateGuestField('${x.id}','lastName',this.value)"></td>
+      <td style="width:56px;text-align:center">${x.createdBy === 'couple' ? '<span class="da-sposi" title="Inserito dagli sposi">sposi</span>' : ''}</td>
       <td style="text-align:center;width:90px">
         <label class="guest-check">
           <input type="checkbox" ${x.confirmed ? 'checked' : ''} onchange="toggleGuestConfirmed('${x.id}')">
@@ -5974,7 +6011,7 @@ function renderGuests() {
             <tr>
               <th style="width:36px;text-align:center">#</th>
               <th>Nome</th>
-              <th>Cognome</th>
+              <th>Cognome</th><th></th>
               <th style="text-align:center;width:90px">Conferma</th>
               <th>Intolleranze / note</th>
               <th style="width:44px"></th>
@@ -5987,9 +6024,12 @@ function renderGuests() {
   `;
 }
 
+function touchGuests() { state.guestsUpdatedAt = Date.now(); }
+
 function addGuest() {
   if (!state.guests) state.guests = [];
-  state.guests.push({ id: uid(), firstName: '', lastName: '', confirmed: false, notes: '' });
+  state.guests.push({ id: uid(), firstName: '', lastName: '', confirmed: false, notes: '', createdBy: 'planner' });
+  touchGuests();
   saveData();
   render();
   setTimeout(() => {
@@ -6002,6 +6042,7 @@ function updateGuestField(id, field, value) {
   const x = (state.guests || []).find(g => g.id === id);
   if (!x) return;
   x[field] = value;
+  touchGuests();
   saveData();   // niente re-render: mantiene il focus nel campo
 }
 
@@ -6009,6 +6050,7 @@ function toggleGuestConfirmed(id) {
   const x = (state.guests || []).find(g => g.id === id);
   if (!x) return;
   x.confirmed = !x.confirmed;
+  touchGuests();
   saveData();
   render();   // aggiorna i conteggi
 }
@@ -6022,6 +6064,7 @@ function deleteGuest(id) {
     danger: true,
     confirmText: 'Elimina',
     onConfirm: () => {
+      touchGuests();
       state.guests = (state.guests || []).filter(g => g.id !== id);
       (state.tables || []).forEach(t => {
         (t.assignments || []).forEach((gid, idx) => { if (gid === id) t.assignments[idx] = null; });
