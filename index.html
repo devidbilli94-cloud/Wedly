@@ -4302,6 +4302,25 @@ textarea {
   background: rgba(94, 130, 94, 0.20) !important;
   color: var(--terracotta) !important;
 }
+/* Bottone rosso in vetro (azioni distruttive evidenti) */
+.btn-danger-glass {
+  background: rgba(150, 42, 55, 0.55) !important;
+  -webkit-backdrop-filter: saturate(150%) blur(12px);
+  backdrop-filter: saturate(150%) blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.32) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: 0 6px 18px rgba(122, 46, 59, 0.26), inset 0 1px 0 rgba(255,255,255,0.28);
+  transition: background .15s, box-shadow .15s, transform .12s;
+}
+.btn-danger-glass:hover {
+  background: rgba(132, 33, 45, 0.72) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 22px rgba(122, 46, 59, 0.34), inset 0 1px 0 rgba(255,255,255,0.28);
+  transform: translateY(-1px);
+}
+
 .filter-chip.active .amp { color: var(--gold) !important; }
 .vendor-tab.active .vt-heart { color: var(--rosé) !important; }
 .vendor-tab.active .vt-check { color: var(--olive) !important; }
@@ -8616,6 +8635,7 @@ function sharedRowModal(id) {
     </div>
     ${id ? `<div class="field" style="margin-bottom:14px"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input id="s-chosen" type="checkbox" ${r.chosen ? 'checked' : ''} style="width:auto;margin:0">Segna come opzione scelta</label></div>` : ''}
     <div class="modal-actions">
+      ${id ? `<button class="btn btn-danger-glass" style="margin-right:auto" onclick="deleteSharedRow('${r.id}')">Elimina Preventivo</button>` : ''}
       <button class="btn btn-ghost" onclick="closeModal()">Annulla</button>
       <button class="btn btn-primary" onclick="saveSharedRow('${r.id}', ${!id})">Salva</button>
     </div>
@@ -8795,8 +8815,8 @@ function deleteSharedRow(id) {
   if (!r) return;
   const nComments = (r.comments || []).length;
   confirmAction({
-    title: 'Eliminare la riga?',
-    message: `<strong>${esc(r.title)}</strong><br>${nComments > 0 ? `Verranno cancellati anche i <strong>${nComments} commenti</strong> degli sposi.` : 'La riga verrà rimossa dallo spazio condiviso.'}`,
+    title: 'Eliminare il preventivo?',
+    message: `<strong>${esc(r.title)}</strong><br>${nComments > 0 ? `Verranno cancellati anche i <strong>${nComments} commenti</strong> degli sposi.` : 'Il preventivo verrà rimosso dallo spazio condiviso.'}`,
     confirmText: 'Elimina',
     danger: true,
     onConfirm: () => {
@@ -8804,9 +8824,10 @@ function deleteSharedRow(id) {
         cloudFetch('/attachment/' + r.attachment.id, { method: 'DELETE' }).catch(() => {});
       }
       state.sharedRows = state.sharedRows.filter(x => x.id !== id);
+      closeModal();
       saveData();
       render();
-      toast('Riga eliminata');
+      toast('Preventivo eliminato');
     }
   });
 }
