@@ -4368,6 +4368,10 @@ textarea {
 .wedding-card-mini .wc-ceremony-empty { color: rgba(94, 130, 94, 0.45); }
 .wedding-card-mini .wc-item { color: #5f6b52; }
 
+.orient-toggle { display:flex; gap:0; border:1px solid var(--line); border-radius:var(--radius-sm); overflow:hidden; }
+.orient-toggle button { flex:1; border:none; background:var(--bg); padding:8px 6px; font-family:inherit; font-size:12.5px; color:var(--ink-soft); cursor:pointer; transition:all .15s; }
+.orient-toggle button:hover { color:var(--terracotta); }
+.orient-toggle button.on { background:var(--terracotta); color:#fff; font-weight:600; }
 .amt-fee {
   font-size: 11.5px;
   color: var(--ink-muted);
@@ -6133,8 +6137,27 @@ function geometriaTavolo(t) {
     return { tonda: true, w, h: w, sx: PAD, sy: PAD, sw: d, sh: d, posti };
   }
 
-  const sopra = Math.ceil(n / 2), sotto = n - sopra;
-  const sw = Math.max(110, sopra * 34 + 26), sh = 82;
+  // Rettangolare: due lati contrapposti. In verticale il tavolo ruota di 90°
+  // e i posti passano dai lati lungo/corto alle colonne sinistra e destra.
+  const primo = Math.ceil(n / 2), secondo = n - primo;
+  const lungo = Math.max(110, primo * 34 + 26);
+  const verticale = t.orient === 'v';
+
+  if (verticale) {
+    const sw = 82, sh = lungo;
+    const w = sw + PAD * 2, h = sh + PAD * 2;
+    const posti = [];
+    const colonna = (quanti, base, x) => {
+      for (let i = 0; i < quanti; i++) {
+        posti[base + i] = { x: Math.round(x), y: Math.round(PAD + (i + 0.5) * (sh / quanti) - r) };
+      }
+    };
+    if (primo) colonna(primo, 0, PAD - GAP - POSTO);     // colonna a sinistra
+    if (secondo) colonna(secondo, primo, PAD + sw + GAP); // colonna a destra
+    return { tonda: false, w, h, sx: PAD, sy: PAD, sw, sh, posti };
+  }
+
+  const sw = lungo, sh = 82;
   const w = sw + PAD * 2, h = sh + PAD * 2;
   const posti = [];
   const fila = (quanti, base, y) => {
@@ -6142,8 +6165,8 @@ function geometriaTavolo(t) {
       posti[base + i] = { x: Math.round(PAD + (i + 0.5) * (sw / quanti) - r), y: Math.round(y) };
     }
   };
-  if (sopra) fila(sopra, 0, PAD - GAP - POSTO);
-  if (sotto) fila(sotto, sopra, PAD + sh + GAP);
+  if (primo) fila(primo, 0, PAD - GAP - POSTO);          // fila sopra
+  if (secondo) fila(secondo, primo, PAD + sh + GAP);     // fila sotto
   return { tonda: false, w, h, sx: PAD, sy: PAD, sw, sh, posti };
 }
 
@@ -6182,6 +6205,14 @@ function renderTableEditor(t) {
         <option value="rect" ${t.shape === 'rect' ? 'selected' : ''}>Rettangolare</option>
       </select>
     </div>
+    ${t.shape === 'rect' ? `
+    <div class="side-field">
+      <label>Orientamento</label>
+      <div class="orient-toggle">
+        <button class="${t.orient !== 'v' ? 'on' : ''}" onclick="ruotaTavolo('${t.id}','h')">⬌ Orizzontale</button>
+        <button class="${t.orient === 'v' ? 'on' : ''}" onclick="ruotaTavolo('${t.id}','v')">⬍ Verticale</button>
+      </div>
+    </div>` : ''}
     <div class="side-field">
       <label>Numero di posti</label>
       <input type="number" min="1" max="20" value="${t.seats || 8}" onchange="updateTableSeats('${t.id}',this.value)">
@@ -6205,7 +6236,7 @@ function addTable() {
   const canvas = document.getElementById('tables-canvas');
   const cx = canvas ? canvas.clientWidth / 2 : 220;
   const cy = canvas ? canvas.clientHeight / 2 : 220;
-  const t = { id: uid(), name: 'Tavolo ' + n, shape: 'round', seats, x: cx + (n % 4) * 26 - 39, y: cy + (n % 4) * 26 - 39, assignments: new Array(seats).fill(null), createdBy: 'planner' };
+  const t = { id: uid(), name: 'Tavolo ' + n, shape: 'round', seats, x: cx + (n % 4) * 26 - 39, y: cy + (n % 4) * 26 - 39, assignments: new Array(seats).fill(null), orient: 'h', createdBy: 'planner' };
   state.tables.push(t);
   selectedTableId = t.id;
   touchTables();
@@ -6225,6 +6256,16 @@ function updateTableField(id, field, value) {
   } else {
     render();   // la forma cambia il layout dei posti
   }
+}
+
+// Ruota il tavolo rettangolare da orizzontale a verticale e viceversa
+function ruotaTavolo(id, verso) {
+  const t = (state.tables || []).find(x => x.id === id);
+  if (!t) return;
+  t.orient = verso === 'v' ? 'v' : 'h';
+  touchTables();
+  saveData();
+  render();
 }
 
 function updateTableSeats(id, value) {
