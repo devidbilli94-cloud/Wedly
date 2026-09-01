@@ -4391,6 +4391,13 @@ textarea {
   z-index: 3;
   white-space: nowrap;
 }
+.amt-fee {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  font-style: italic;
+}
 .da-sposi {
   font-size: 9px;
   font-weight: 700;
@@ -8317,6 +8324,36 @@ function deleteTransaction(id) {
 // ============================================
 // VIEW: SHARED (with comments by role)
 // ============================================
+// ============================================
+// PARCELLA WEDDING PLANNER
+// Se una categoria del preventivo è la wedding planner, il suo importo diventa
+// "importo base + 10% del resto del preventivo", quindi si aggiorna da solo
+// ogni volta che il totale sale o scende.
+// Il 10% si calcola sulle ALTRE categorie: calcolarlo sul totale complessivo
+// sarebbe circolare (la parcella entrerebbe nel calcolo di sé stessa).
+// ============================================
+const PERCENTUALE_PLANNER = 0.10;
+
+function isCategoriaPlanner(nome) {
+  return /planner/i.test((nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+}
+
+// Importo di riferimento di una categoria: quello scelto, altrimenti il più basso
+function importoBaseCategoria(cat) {
+  const chosen = cat.rows.find(r => r.chosen);
+  if (chosen) return chosen.amount || 0;
+  return Math.min(...cat.rows.map(r => r.amount || 0));
+}
+
+function calcolaTotaliPreventivo(categories) {
+  let altre = 0;
+  categories.forEach(c => { if (!isCategoriaPlanner(c.name)) altre += importoBaseCategoria(c); });
+  const parcella = Math.round(altre * PERCENTUALE_PLANNER * 100) / 100;
+  let totale = altre;
+  categories.forEach(c => { if (isCategoriaPlanner(c.name)) totale += importoBaseCategoria(c) + parcella; });
+  return { altre, parcella, totale, cePlanner: categories.some(c => isCategoriaPlanner(c.name)) };
+}
+
 function renderShared() {
   // In planner view, the planner always comments as "Planner".
   // The bride/groom comment through their own PIN login (couple mode), not from here.
@@ -8335,13 +8372,11 @@ function renderShared() {
     rows: rows.sort((a, b) => (a.amount || 0) - (b.amount || 0))
   })).sort((a, b) => a.name.localeCompare(b.name));
 
-  const totalChosen = quotes.filter(r => r.chosen).reduce((s, r) => s + (r.amount || 0), 0);
-  // Total = sum of (chosen if any, else cheapest) per category
-  const totalPreventivo = categories.reduce((sum, cat) => {
-    const chosen = cat.rows.find(r => r.chosen);
-    const min = Math.min(...cat.rows.map(r => r.amount || 0));
-    return sum + (chosen ? (chosen.amount || 0) : min);
-  }, 0);
+  const T = calcolaTotaliPreventivo(categories);
+  const totalPreventivo = T.totale;
+  let totalChosen = quotes.filter(r => r.chosen).reduce((s, r) => s + (r.amount || 0), 0);
+  // se è stata scelta la wedding planner, alla voce "solo scelte" va aggiunta la sua percentuale
+  if (quotes.some(r => r.chosen && isCategoriaPlanner(r.category))) totalChosen += T.parcella;
   const totalSavings = categories.reduce((sum, cat) => {
     if (cat.rows.length < 2) return sum;
     const max = Math.max(...cat.rows.map(r => r.amount || 0));
@@ -8378,7 +8413,7 @@ function renderShared() {
       </div>
     ` : ''}
 
-    ${categories.length > 0 ? renderQuotesSummaryTable(categories, false) : ''}
+    ${categories.length > 0 ? renderQuotesSummaryTable(categories, false, T.parcella) : ''}
 
     ${discussions.length > 0 ? `
       <div class="section-divider"><div class="title">Altre note</div><div class="line"></div></div>
@@ -8387,7 +8422,8 @@ function renderShared() {
   `;
 }
 
-function renderQuotesSummaryTable(categories, isCouple) {
+function renderQuotesSummaryTable(categories, isCouple, parcella) {
+  if (parcella === undefined) parcella = calcolaTotaliPreventivo(categories).parcella;
   return `
     <div class="quote-table-wrap">
       <table class="quote-table summary-table">
@@ -8399,14 +8435,14 @@ function renderQuotesSummaryTable(categories, isCouple) {
           </tr>
         </thead>
         <tbody>
-          ${categories.map(cat => renderCategorySummaryRow(cat, isCouple)).join('')}
+          ${categories.map(cat => renderCategorySummaryRow(cat, isCouple, parcella)).join('')}
         </tbody>
       </table>
     </div>
   `;
 }
 
-function renderCategorySummaryRow(cat, isCouple) {
+function renderCategorySummaryRow(cat, isCouple, parcella) {
   const chosen = cat.rows.find(r => r.chosen);
   const reference = chosen || cat.rows[0];
   const attachRow = (chosen && chosen.attachment) ? chosen : cat.rows.find(r => r.attachment);
@@ -8416,12 +8452,12 @@ function renderCategorySummaryRow(cat, isCouple) {
   const safeKey = cat.name.replace(/[^a-zA-Z0-9_]/g, '_');
 
   let amountDisplay;
-  if (chosen) {
-    amountDisplay = `<div class="amt-main">€ ${formatMoney(chosen.amount)}</div>`;
-  } else if (cat.rows.length > 1) {
-    amountDisplay = `<div class="amt-main">€ ${formatMoney(min)}</div>`;
+  const base = chosen ? (chosen.amount || 0) : (cat.rows.length > 1 ? min : (reference.amount || 0));
+  if (isCategoriaPlanner(cat.name) && parcella) {
+    amountDisplay = `<div class="amt-main">€ ${formatMoney(base + parcella)}</div>
+      <div class="amt-fee">€ ${formatMoney(base)} + 10% (€ ${formatMoney(parcella)})</div>`;
   } else {
-    amountDisplay = `<div class="amt-main">€ ${formatMoney(reference.amount)}</div>`;
+    amountDisplay = `<div class="amt-main">€ ${formatMoney(base)}</div>`;
   }
 
   return `
