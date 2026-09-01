@@ -3831,7 +3831,7 @@ table.guest-table tr:last-child td { border-bottom:none; }
 .tables-hint { font-size:12px; color:var(--ink-muted); }
 .tables-layout { display:grid; grid-template-columns:1fr 250px; gap:16px; align-items:start; }
 @media (max-width:820px){ .tables-layout{ grid-template-columns:1fr; } }
-.tables-canvas { position:relative; background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius); height:560px; overflow:hidden; background-image:radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px); background-size:24px 24px; }
+.tables-canvas { position:relative; background:var(--bg-card); border:1px solid var(--line); border-radius:var(--radius); height:560px; overflow:auto; background-image:radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px); background-size:24px 24px; }
 .table-node { position:absolute; transform:translate(-50%,-50%); cursor:grab; user-select:none; touch-action:none; }
 .table-node:active { cursor:grabbing; }
 .table-node.selected .table-shape { box-shadow:0 0 0 2px var(--terracotta), 0 6px 16px rgba(0,0,0,0.12); }
@@ -6089,6 +6089,8 @@ function renderTables() {
   const seatedCount = tables.reduce((n, t) => n + (t.assignments || []).filter(Boolean).length, 0);
   const sel = tables.find(t => t.id === selectedTableId);
   const nodes = tables.map(renderTableNode).join('');
+  // Il riquadro si allunga per contenere anche i tavoli sistemati in basso dagli sposi
+  const canvasH = Math.max(560, ...tables.map(t => (t.y || 0) + 130));
 
   return `
     <div class="page-header">
@@ -6110,7 +6112,7 @@ function renderTables() {
       </div>
     ` : `
       <div class="tables-layout">
-        <div class="tables-canvas" id="tables-canvas">${nodes}</div>
+        <div class="tables-canvas" id="tables-canvas" style="height:${canvasH}px">${nodes}</div>
         <div class="tables-side">
           ${sel ? renderTableEditor(sel) : `
             <h3>Modifica tavolo</h3>
@@ -6152,7 +6154,6 @@ function renderTableNode(t) {
   const daSposi = t.createdBy === 'couple';
   return `<div class="table-node ${t.id === selectedTableId ? 'selected' : ''} ${daSposi ? 'from-couple' : ''}" id="table-${t.id}" style="left:${t.x || 140}px;top:${t.y || 140}px" onpointerdown="startTableDrag(event,'${t.id}')">
     <div class="table-shape ${isRound ? 'round' : 'rect'}" style="${shapeStyle}">${esc(t.name || '')}</div>
-    ${daSposi ? '<div class="tbl-couple-tag" title="Creato dagli sposi">sposi</div>' : ''}
     ${seatEls}
   </div>`;
 }
