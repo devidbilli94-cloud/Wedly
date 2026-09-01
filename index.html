@@ -4367,6 +4367,40 @@ textarea {
 .wedding-card-mini .wc-ct-loc { color: #6b7360; }
 .wedding-card-mini .wc-ceremony-empty { color: rgba(94, 130, 94, 0.45); }
 .wedding-card-mini .wc-item { color: #5f6b52; }
+
+/* Tavoli creati dagli sposi: si devono riconoscere a colpo d'occhio */
+.table-node.from-couple .table-shape {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(184, 156, 90, 0.20);
+}
+.tbl-couple-tag {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #8a6d2f;
+  background: rgba(184, 156, 90, 0.22);
+  border: 1px solid rgba(184, 156, 90, 0.55);
+  padding: 1px 8px;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 3;
+  white-space: nowrap;
+}
+.tbl-couple-note {
+  font-size: 12.5px;
+  color: #8a6d2f;
+  background: rgba(184, 156, 90, 0.14);
+  border: 1px solid rgba(184, 156, 90, 0.40);
+  border-radius: var(--radius-sm);
+  padding: 8px 11px;
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
 </style>
 </head>
 <body>
@@ -4906,14 +4940,15 @@ async function pollComments() {
   if (coupleSession.role) return; // non in modalità sposi
   try {
     const data = await cloudFetch('/planner/comments');
-    const changed = mergeCloudComments(data.comments || {});
-    if (changed) {
+    const changedC = mergeCloudComments(data.comments || {});
+    const changedT = mergeCloudTables(data.tables || {});
+    if (changedC || changedT) {
       // Aggiorna la vista solo se non c'è un modale aperto (per non disturbare un'azione in corso)
       const modalOpen = document.getElementById('modal-overlay')?.classList.contains('active');
       updateFloatingReminders && updateFloatingReminders();
-      if (!modalOpen && (currentView === 'shared' || currentView === 'couple' || currentView === 'reminders')) {
-        render();
-      }
+      const viste = ['shared', 'couple', 'reminders'];
+      if (changedT) viste.push('tables');
+      if (!modalOpen && viste.includes(currentView)) render();
     }
   } catch (e) { /* riprova al prossimo giro */ }
 }
@@ -4938,6 +4973,28 @@ function mergeCloudComments(byWedding) {
         changed = true;
       }
     });
+  });
+  if (changed) cacheLocal();
+  return changed;
+}
+
+// Assorbe i tavoli creati o spostati dagli sposi dal loro portale.
+// Vince sempre la versione più recente, confrontando la marca temporale.
+function mergeCloudTables(byWedding) {
+  let changed = false;
+  Object.keys(byWedding).forEach(wid => {
+    const local = store.projects.find(p => p.id === wid);
+    if (!local) return;
+    const remote = byWedding[wid] || {};
+    const tsRemote = remote.tablesUpdatedAt || 0;
+    const tsLocal = local.tablesUpdatedAt || 0;
+    if (tsRemote > tsLocal) {
+      // non sovrascrivere mentre si sta trascinando un tavolo
+      if (typeof _dragTable !== 'undefined' && _dragTable) return;
+      local.tables = remote.tables || [];
+      local.tablesUpdatedAt = tsRemote;
+      changed = true;
+    }
   });
   if (changed) cacheLocal();
   return changed;
@@ -6049,8 +6106,10 @@ function renderTableNode(t) {
       seatEls += seatEl(t, i, (w / (countSide + 1)) * (idxInSide + 1), top ? -14 : h + 14);
     }
   }
-  return `<div class="table-node ${t.id === selectedTableId ? 'selected' : ''}" id="table-${t.id}" style="left:${t.x || 140}px;top:${t.y || 140}px" onpointerdown="startTableDrag(event,'${t.id}')">
+  const daSposi = t.createdBy === 'couple';
+  return `<div class="table-node ${t.id === selectedTableId ? 'selected' : ''} ${daSposi ? 'from-couple' : ''}" id="table-${t.id}" style="left:${t.x || 140}px;top:${t.y || 140}px" onpointerdown="startTableDrag(event,'${t.id}')">
     <div class="table-shape ${isRound ? 'round' : 'rect'}" style="${shapeStyle}">${esc(t.name || '')}</div>
+    ${daSposi ? '<div class="tbl-couple-tag" title="Creato dagli sposi">sposi</div>' : ''}
     ${seatEls}
   </div>`;
 }
@@ -6066,6 +6125,7 @@ function seatEl(t, i, x, y) {
 function renderTableEditor(t) {
   return `
     <h3>Modifica tavolo</h3>
+    ${t.createdBy === 'couple' ? '<div class="tbl-couple-note">Questo tavolo è stato creato dagli sposi dal loro portale.</div>' : ''}
     <div class="side-field">
       <label>Nome</label>
       <input type="text" class="no-cap" value="${esc(t.name || '')}" oninput="updateTableField('${t.id}','name',this.value)">
@@ -6087,6 +6147,12 @@ function renderTableEditor(t) {
 
 function selectTableAndRender(id) { selectedTableId = id; render(); }
 
+// Segna il momento dell'ultima modifica ai tavoli: serve a capire, fra la
+// versione della planner e quella degli sposi, quale delle due è più recente.
+function touchTables() {
+  state.tablesUpdatedAt = Date.now();
+}
+
 function addTable() {
   if (!state.tables) state.tables = [];
   const n = state.tables.length + 1;
@@ -6094,9 +6160,10 @@ function addTable() {
   const canvas = document.getElementById('tables-canvas');
   const cx = canvas ? canvas.clientWidth / 2 : 220;
   const cy = canvas ? canvas.clientHeight / 2 : 220;
-  const t = { id: uid(), name: 'Tavolo ' + n, shape: 'round', seats, x: cx + (n % 4) * 26 - 39, y: cy + (n % 4) * 26 - 39, assignments: new Array(seats).fill(null) };
+  const t = { id: uid(), name: 'Tavolo ' + n, shape: 'round', seats, x: cx + (n % 4) * 26 - 39, y: cy + (n % 4) * 26 - 39, assignments: new Array(seats).fill(null), createdBy: 'planner' };
   state.tables.push(t);
   selectedTableId = t.id;
+  touchTables();
   saveData();
   render();
 }
@@ -6105,6 +6172,7 @@ function updateTableField(id, field, value) {
   const t = (state.tables || []).find(x => x.id === id);
   if (!t) return;
   t[field] = value;
+  touchTables();
   saveData();
   if (field === 'name') {
     const node = document.querySelector('#table-' + id + ' .table-shape');
@@ -6122,6 +6190,7 @@ function updateTableSeats(id, value) {
   if (!Array.isArray(t.assignments)) t.assignments = [];
   while (t.assignments.length < n) t.assignments.push(null);
   if (t.assignments.length > n) t.assignments = t.assignments.slice(0, n);
+  touchTables();
   saveData();
   render();
 }
@@ -6136,6 +6205,7 @@ function deleteTable(id) {
     onConfirm: () => {
       state.tables = (state.tables || []).filter(x => x.id !== id);
       if (selectedTableId === id) selectedTableId = null;
+      touchTables();
       saveData();
       render();
     }
@@ -6169,7 +6239,7 @@ function onTableDragMove(e) {
 function endTableDrag() {
   document.removeEventListener('pointermove', onTableDragMove);
   document.removeEventListener('pointerup', endTableDrag);
-  if (_dragTable) { _dragTable = null; saveData(); render(); }
+  if (_dragTable) { _dragTable = null; touchTables(); saveData(); render(); }
 }
 
 function openSeatAssign(tableId, seatIndex) {
@@ -6211,6 +6281,7 @@ function assignSeat(tableId, seatIndex, guestId) {
   } else {
     t.assignments[seatIndex] = null;
   }
+  touchTables();
   saveData();
   closeModal();
   render();
