@@ -4797,22 +4797,35 @@ function cacheLocal() {
 }
 
 // Salva il PROGETTO ATTIVO sul cloud (con debounce) + copia locale
+async function pushState() {
+  if (!cloudCfg || !state) return;
+  setSyncBadge('saving');
+  try {
+    await cloudFetch('/wedding/' + state.id, { method: 'PUT', body: state });
+    setSyncBadge('saved');
+  } catch (e) {
+    setSyncBadge(navigator.onLine ? 'error' : 'offline');
+  }
+}
+
 function saveData(immediate) {
   cacheLocal();
   if (!cloudCfg || !state) return;
   if (_saveTimer) clearTimeout(_saveTimer);
-  const doPush = async () => {
-    setSyncBadge('saving');
-    try {
-      await cloudFetch('/wedding/' + state.id, { method: 'PUT', body: state });
-      setSyncBadge('saved');
-    } catch (e) {
-      setSyncBadge(navigator.onLine ? 'error' : 'offline');
-    }
-  };
-  if (immediate) { doPush(); return; }
-  _saveTimer = setTimeout(doPush, 700);
+  if (immediate) { _saveTimer = null; pushState(); return; }
+  _saveTimer = setTimeout(() => { _saveTimer = null; pushState(); }, 700);
 }
+
+// Se la finestra viene chiusa o messa in secondo piano con un salvataggio
+// ancora in attesa, lo mandiamo subito invece di perderlo.
+function inviaSubitoSePendente() {
+  if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; pushState(); }
+  if (_indexTimer) { clearTimeout(_indexTimer); _indexTimer = null; saveIndex(true); }
+}
+window.addEventListener('pagehide', inviaSubitoSePendente);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') inviaSubitoSePendente();
+});
 
 // Salva l'indice dei progetti (lista + progetto attivo)
 function saveIndex(immediate) {
