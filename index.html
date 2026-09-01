@@ -4369,6 +4369,9 @@ textarea {
 .wedding-card-mini .wc-ceremony-empty { color: rgba(94, 130, 94, 0.45); }
 .wedding-card-mini .wc-item { color: #5f6b52; }
 
+.cal-task.acconto { background: rgba(184, 156, 90, 0.22); color: #8a6d2f; }
+.cal-task.acconto:hover { background: rgba(184, 156, 90, 0.34); }
+.cal-task.acconto.done { opacity: 0.5; text-decoration: line-through; }
 .acconto-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
 .acconto-row .acc-label { flex:2 1 150px; min-width:120px; }
 .acconto-row .acc-amount { flex:1 1 90px; min-width:80px; }
@@ -6941,6 +6944,9 @@ function openItemInProject(projectId, kind, itemId) {
   } else if (kind === 'task') {
     navigateTo('planning');
     setTimeout(() => { if (typeof taskModal === 'function') taskModal(itemId); }, 140);
+  } else if (kind === 'acconto') {
+    navigateTo('shared');
+    setTimeout(() => { if (typeof sharedRowModal === 'function') sharedRowModal(itemId); }, 140);
   }
 }
 
@@ -7790,12 +7796,29 @@ function renderRemindersCalendar() {
         done: t.done
       });
     });
+    // Scadenze degli acconti inseriti nei preventivi
+    (p.sharedRows || []).forEach(r => {
+      (r.acconti || []).forEach(a => {
+        if (!a.due) return;
+        items.push({
+          kind: 'acconto',
+          id: r.id,
+          projectId: p.id,
+          coupleName,
+          title: (a.label || 'Acconto') + (r.title ? ' · ' + r.title : ''),
+          date: a.due,
+          amount: Number(a.amount) || 0,
+          done: !!a.paid
+        });
+      });
+    });
   });
 
   // Sort within a day: appointments by time, then tasks
+  const ordineTipo = { appointment: 0, acconto: 1, task: 2 };
   items.sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
-    if (a.kind !== b.kind) return a.kind === 'appointment' ? -1 : 1;
+    if (a.kind !== b.kind) return (ordineTipo[a.kind] ?? 9) - (ordineTipo[b.kind] ?? 9);
     return (a.time || '').localeCompare(b.time || '');
   });
 
@@ -7834,7 +7857,7 @@ function renderRemindersCalendar() {
 
           // Compute urgency. Past appointments don't count as "overdue" — only open tasks do.
           // For future/today cells, both appointments and open tasks contribute.
-          const hasOpenTask = dayItems.some(it => it.kind === 'task' && !it.done);
+          const hasOpenTask = dayItems.some(it => (it.kind === 'task' || it.kind === 'acconto') && !it.done);
           const hasAppointment = dayItems.some(it => it.kind === 'appointment');
           let dotColor = null;
           if (!isOtherMonth) {
@@ -7880,9 +7903,15 @@ function renderRemindersCalendar() {
           }).join('');
 
           const itemPills = dayItems.map(item => {
-            let pillCls = item.kind === 'appointment' ? 'appointment' : 'task';
+            let pillCls = item.kind === 'appointment' ? 'appointment' : (item.kind === 'acconto' ? 'acconto' : 'task');
             if (item.done) pillCls += ' done';
             const timeChunk = item.time ? ` · ${esc(item.time)}` : '';
+            if (item.kind === 'acconto') {
+              return `<div class="cal-task acconto ${item.done ? 'done' : ''}" onclick="event.stopPropagation();openItemInProject('${item.projectId}','acconto','${item.id}')" title="${esc(item.coupleName)} — ${esc(item.title)}: € ${formatMoney(item.amount)}${item.done ? ' (versato)' : ''}">
+                <div class="ct-couple">${esc(item.coupleName)}</div>
+                <div class="ct-event">💶 € ${formatMoney(item.amount)} · ${esc(item.title)}</div>
+              </div>`;
+            }
             return `<div class="cal-task ${pillCls}" onclick="event.stopPropagation();openItemInProject('${item.projectId}','${item.kind}','${item.id}')" title="${esc(item.coupleName)} — ${esc(item.title)}${timeChunk}">
               <div class="ct-couple">${esc(item.coupleName)}</div>
               <div class="ct-event">${esc(item.title)}${item.time ? ` · <span class="ct-time">${esc(item.time)}</span>` : ''}</div>
@@ -7899,6 +7928,7 @@ function renderRemindersCalendar() {
         }).join('')}
       </div>
       <div class="cal-legend">
+        <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:rgba(184,156,90,0.34)"></span>Acconti</div>
         <div class="cal-legend-item"><span class="cal-legend-swatch wedding-swatch"></span>Il Grande Giorno</div>
         <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:rgba(120,177,89,0.18);border:1px solid rgba(120,177,89,0.50)"></span>Celebrato <svg viewBox="7 6 29 19" width="32" height="21" fill="#f6f0e7" stroke="#b89c5a" stroke-width="1.3" style="vertical-align:middle"><defs><clipPath id="wr-legend"><rect x="19.2" y="10.5" width="6.8" height="7.5"/></clipPath></defs><ellipse cx="16" cy="13" rx="9" ry="6" transform="rotate(-38 16 13)"/><ellipse cx="16" cy="13" rx="6.2" ry="3.4" transform="rotate(-38 16 13)"/><ellipse cx="25" cy="17" rx="10" ry="6.5" transform="rotate(-15 25 17)"/><ellipse cx="25" cy="17" rx="7" ry="3.8" transform="rotate(-15 25 17)"/><g clip-path="url(#wr-legend)"><ellipse cx="16" cy="13" rx="9" ry="6" transform="rotate(-38 16 13)"/><ellipse cx="16" cy="13" rx="6.2" ry="3.4" transform="rotate(-38 16 13)"/></g></svg></div>
         <div class="cal-legend-item"><span class="cal-legend-swatch" style="background:rgba(255,188,92,0.20);border:1px solid #ffbc5c"></span>Appuntamento</div>
