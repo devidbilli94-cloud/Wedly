@@ -299,12 +299,20 @@ input, textarea, select { font-family: inherit; font-size: inherit; color: var(-
   padding-top: 16px;
   border-top: 1px solid var(--line);
 }
+.sidebar-footer .app-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: #cbb894;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  margin: 2px 0 10px;
+}
 .sync-badge {
   font-size: 10px;
   letter-spacing: 0.04em;
   text-transform: none;
-  margin-bottom: 8px;
-  min-height: 14px;
   transition: color .2s;
 }
 .sync-badge.saving { color: var(--ink-muted); }
@@ -4625,7 +4633,7 @@ textarea {
 
     <div class="sidebar-footer">
       <div id="sync-badge" class="sync-badge"></div>
-      <div style="cursor:pointer;color:var(--terracotta);margin-bottom:8px;font-weight:600" onclick="showPinEntry()">↗ Modalità Sposi</div>
+      <div class="app-name">Wedly</div>
       v 1.0 · Italia
     </div>
   </aside>
@@ -4777,9 +4785,11 @@ function normalizeBase(u) { return (u || '').trim().replace(/\/+$/, ''); }
 function setSyncBadge(s) {
   const el = document.getElementById('sync-badge');
   if (!el) return;
+  // Quando va tutto bene non si scrive nulla: restano visibili solo i problemi,
+  // così l'utente viene avvisato se una modifica non è stata salvata.
   const map = {
-    saving:  ['● Salvataggio…', 'saving'],
-    saved:   ['● Sincronizzato', 'saved'],
+    saving:  ['', ''],
+    saved:   ['', ''],
     error:   ['● Errore di salvataggio', 'error'],
     offline: ['● Offline — modifiche non salvate', 'offline'],
   };
